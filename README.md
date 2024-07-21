@@ -21,7 +21,7 @@ Steps
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
 
 ## Demo device
-I have create a custom pcb to integrate a DHT22/AM2302 from ASAIR & SGP40 from Adafruit with a hi-link converter to run the device from AC. the board is powered by an ESP32 Devkit
+I have created a custom pcb to integrate a DHT22/AM2302 from ASAIR & SGP40 from Adafruit with a hi-link converter to run the device from AC. the board is powered by an ESP32 Devkit
 - [PCB Schema](https://365.altium.com/files/E2252F43-3197-4BE0-AAA4-C608606C2910)
 - [Demo Device](device.jpg)
 
