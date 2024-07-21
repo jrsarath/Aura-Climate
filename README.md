@@ -20,6 +20,11 @@ Steps
 | Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
 
+## Demo device
+I have create a custom pcb to integrate a DHT22/AM2302 from ASAIR & SGP40 from Adafruit with a hi-link converter to run the device from AC. the board is powered by an ESP32 Devkit
+- [PCB Schema](https://365.altium.com/files/E2252F43-3197-4BE0-AAA4-C608606C2910)
+- [Demo Device](device.jpg)
+
 ## Folder structure
 
 The project **sample_project** contains source files written in C++, the entrypoint file is [main.cpp](main/main.cpp). All the source files are located in folder [main](main).
