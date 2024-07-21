@@ -27,7 +27,7 @@ I have created a custom pcb to integrate a DHT22/AM2302 from ASAIR & SGP40 from 
 
 ## Folder structure
 
-The project **sample_project** contains source files written in C++, the entrypoint file is [main.cpp](main/main.cpp). All the source files are located in folder [main](main).
+The project contains source files written in C++, the entrypoint file is [main.cpp](main/main.cpp). All the source files are located in folder [main](main).
 
 ESP-IDF projects are built using CMake. The project build configuration is contained in `CMakeLists.txt`
 files that provide set of directives and instructions describing the project's source files and targets
