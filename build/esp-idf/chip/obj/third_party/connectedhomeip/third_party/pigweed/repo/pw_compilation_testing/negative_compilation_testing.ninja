@@ -1,7 +1,0 @@
-defines = -DNDEBUG
-framework_dirs =
-include_dirs = -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_compilation_testing/public
-target_output_name = negative_compilation_testing
-
-
-build obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_compilation_testing/negative_compilation_testing.stamp: stamp

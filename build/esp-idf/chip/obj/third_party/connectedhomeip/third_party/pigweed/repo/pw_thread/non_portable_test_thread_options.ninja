@@ -1,8 +1,0 @@
-defines = -DNDEBUG
-framework_dirs =
-include_dirs = -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/public
-target_output_name = non_portable_test_thread_options
-
-build obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/non_portable_test_thread_options.inputdeps.stamp: stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/id.NO_BACKEND_SET.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/thread.NO_BACKEND_SET.stamp
-
-build obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/non_portable_test_thread_options.stamp: stamp || obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/thread.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/thread.facade.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/id.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/id.facade.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/thread_core.stamp
