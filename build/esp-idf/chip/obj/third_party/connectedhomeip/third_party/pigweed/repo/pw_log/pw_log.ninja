@@ -1,0 +1,7 @@
+defines = -DNDEBUG
+framework_dirs =
+include_dirs = -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_log/public -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_log_basic/public_overrides -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_log_basic/public -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_preprocessor/public -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_polyfill/public
+target_output_name = pw_log
+
+
+build obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_log/pw_log.stamp: stamp || obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_log/pw_log.facade.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_log_basic/pw_log_basic.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_log/config.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_preprocessor/pw_preprocessor.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_polyfill/pw_polyfill.stamp

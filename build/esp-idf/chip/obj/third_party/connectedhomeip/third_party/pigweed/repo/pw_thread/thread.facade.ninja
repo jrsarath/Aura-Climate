@@ -1,0 +1,7 @@
+defines = -DNDEBUG
+framework_dirs =
+include_dirs = -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/public
+target_output_name = thread.facade
+
+
+build obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/thread.facade.stamp: stamp || obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/id.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/thread_core.stamp obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_thread/id.facade.stamp

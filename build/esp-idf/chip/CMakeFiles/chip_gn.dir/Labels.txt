@@ -1,0 +1,13 @@
+# Target labels
+ chip_gn
+# Source files and their labels
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/CMakeFiles/chip_gn
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/CMakeFiles/chip_gn.rule
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/CMakeFiles/chip_gn-complete.rule
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/chip_gn-prefix/src/chip_gn-stamp/chip_gn-build.rule
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/chip_gn-prefix/src/chip_gn-stamp/chip_gn-configure.rule
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/chip_gn-prefix/src/chip_gn-stamp/chip_gn-download.rule
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/chip_gn-prefix/src/chip_gn-stamp/chip_gn-install.rule
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/chip_gn-prefix/src/chip_gn-stamp/chip_gn-mkdir.rule
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/chip_gn-prefix/src/chip_gn-stamp/chip_gn-patch.rule
+/Users/sarath/Documents/GitHub/Aura/devices/climate/firmware/build/esp-idf/chip/chip_gn-prefix/src/chip_gn-stamp/chip_gn-update.rule

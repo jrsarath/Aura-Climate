@@ -1,0 +1,7 @@
+defines = -DNDEBUG
+framework_dirs =
+include_dirs = -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/nlio/repo/include
+target_output_name = nlio
+
+
+build obj/third_party/connectedhomeip/third_party/nlio/nlio.stamp: stamp

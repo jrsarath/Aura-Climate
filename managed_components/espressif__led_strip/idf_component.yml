@@ -1,0 +1,5 @@
+name: "led_strip"
+
+version: "1.0.0"
+
+description: Library for adressable RGB led strip WS2812

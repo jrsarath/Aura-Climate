@@ -1,0 +1,20 @@
+{
+  "gn_target_name": "//third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py:py",
+  "inputs": [
+
+  ],
+  "setup_sources": [
+    "../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py/pyproject.toml",
+    "../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py/setup.cfg"
+  ],
+  "sources": [
+    "../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py/pw_toolchain/__init__.py",
+    "../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py/pw_toolchain/bad_toolchain.py",
+    "../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py/pw_toolchain/clang_arm_toolchain.py",
+    "../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py/pw_toolchain/clang_tidy.py",
+    "../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py/pw_toolchain/copy_with_metadata.py"
+  ],
+  "tests": [
+    "../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_toolchain/py/clang_tidy_test.py"
+  ]
+}

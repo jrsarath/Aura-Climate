@@ -1,0 +1,7 @@
+defines = -DNDEBUG
+framework_dirs =
+include_dirs = -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_result/public
+target_output_name = expected
+
+
+build obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_result/expected.stamp: stamp

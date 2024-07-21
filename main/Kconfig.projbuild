@@ -1,0 +1,18 @@
+menu "Sensor Configuration"
+    config GPIO_DHT22_GPIO_PIN
+        int "GPIO Pin for DHT22 Sensor"
+        default 4
+        help
+            The GPIO pin number for the DHT22 sensor. Default is 4.
+    config GPIO_I2C_MASTER_SDA
+        int "I2C Master SDA Pin"
+        default 21
+        help
+            The GPIO pin number for I2C Master SDA. Default is 21.
+    config GPIO_I2C_MASTER_SCL
+        int "I2C Master SCL Pin"
+        default 22
+        help
+            The GPIO pin number for I2C Master SCL. Default is 22.
+endmenu
+    

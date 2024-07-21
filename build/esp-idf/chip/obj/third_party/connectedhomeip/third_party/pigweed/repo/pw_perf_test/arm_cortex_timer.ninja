@@ -1,0 +1,7 @@
+defines = -DNDEBUG
+framework_dirs =
+include_dirs = -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_perf_test/public -I../../../../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/config/esp32/third_party/connectedhomeip/third_party/pigweed/repo/pw_perf_test/arm_cortex_cyccnt_public_overrides
+target_output_name = arm_cortex_timer
+
+
+build obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_perf_test/arm_cortex_timer.stamp: stamp || obj/third_party/connectedhomeip/third_party/pigweed/repo/pw_perf_test/duration_unit.stamp
