@@ -113,7 +113,7 @@ extern "C" void app_main() {
     esp_matter::attribute::set_callback(sensor_attribute_update_cb);
 
     #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-        /* Set OpenThread platform config */
+        // Set OpenThread platform config
         esp_openthread_platform_config_t config = {
             .radio_config = ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG(),
             .host_config = ESP_OPENTHREAD_DEFAULT_HOST_CONFIG(),
@@ -122,7 +122,7 @@ extern "C" void app_main() {
         set_openthread_platform_config(&config);
     #endif
 
-    /* Matter start */
+    // Matter start
     err = esp_matter::start(app_event_cb);
     ABORT_APP_ON_FAILURE(err == ESP_OK, ESP_LOGE(TAG, "Failed to start Matter, err:%d", err));
 
