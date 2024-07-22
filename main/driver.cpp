@@ -4,8 +4,8 @@
 #include <esp_log.h>
 #include <esp_matter.h>
 #include <sgp40.h>
+#include <device.h>
 #include <driver/gpio.h>
-#include "bsp/esp-bsp.h"
 
 #include "includes/driver.h"
 #include "includes/sensors.h"
@@ -116,8 +116,8 @@ driver_handle driver_voc_init() {
     return ESP_OK;
 }
 driver_handle driver_button_init() {
-    button_handle_t btns[BSP_BUTTON_NUM];
-    ESP_ERROR_CHECK(bsp_iot_button_create(btns, NULL, BSP_BUTTON_NUM));
-    ESP_ERROR_CHECK(iot_button_register_cb(btns[0], BUTTON_PRESS_DOWN, driver_button_toggle_cb, NULL));
-    return (driver_handle)btns[0];
+    button_config_t config = button_driver_get_config();
+    button_handle_t handle = iot_button_create(&config);
+    iot_button_register_cb(handle, BUTTON_PRESS_DOWN, driver_button_toggle_cb, NULL);
+    return (driver_handle)handle;
 }
