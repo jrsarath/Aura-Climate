@@ -9,6 +9,7 @@
 #include <esp_matter_ota.h>
 #include <esp_matter_console.h>
 #include <app_reset.h>
+#include <common_macros.h>
 #include <app/server/Server.h>
 #include <app/server/CommissioningWindowManager.h>
 
