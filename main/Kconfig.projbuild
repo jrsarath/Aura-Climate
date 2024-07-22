@@ -15,4 +15,3 @@ menu "Sensor Configuration"
         help
             The GPIO pin number for I2C Master SCL. Default is 22.
 endmenu
-    
