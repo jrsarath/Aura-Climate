@@ -13,7 +13,6 @@ Requirements
 Steps
 - Clone the repository
 - Set GPIO pins for DHT22 and I2C (SGP40) sensors using Kconfig
-- Enable or adjust features as per your requirement
 - Build and flash the firmware
 
 
