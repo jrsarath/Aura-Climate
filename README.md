@@ -1,4 +1,5 @@
 <img src="assets/aura-matter.svg" width="100%" />
+
 # Aura Climate
 A simple firmware using the esp-matter SDK to develop a Matter-enabled device with the following features:
 - **Temperature & Humidity:** DHT22 sensor
