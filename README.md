@@ -1,4 +1,4 @@
-![Matter](https://csa-iot.org/wp-content/uploads/2022/09/matter_lkup_rgb_night-scaled.jpg)
+![Aura + Matter](assets/aura-matter.svg)
 # Aura Climate
 A simple firmware using the esp-matter SDK to develop a Matter-enabled device with the following features:
 - **Temperature & Humidity:** DHT22 sensor
@@ -22,7 +22,7 @@ Steps
 ## Demo device
 This project includes a custom PCB integrating a DHT22/AM2302 from ASAIR and SGP40 from Adafruit, with a Hi-Link converter to run the device from AC. The board is powered by an ESP32 Devkit.
 - [PCB Schema](https://365.altium.com/files/E2252F43-3197-4BE0-AAA4-C608606C2910)
-- [Demo Device](device.jpg)
+- [Demo Device](assets/device.jpg)
 
 ## Other firmwares
 - [Aura Control](https://github.com/jrsarath/aura-control)
