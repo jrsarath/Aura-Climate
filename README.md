@@ -33,5 +33,6 @@ This project includes a custom PCB integrating a DHT22/AM2302 from ASAIR and SGP
 - [esp-matter](https://github.com/espressif/esp-matter)
 - [esp-idf-lib](https://github.com/UncleRus/esp-idf-lib/)
 
-<hr />
-Made in kolkata with ❤️ 
+<br />
+<br />
+Made in Kolkata with ❤️ 
