@@ -18,6 +18,11 @@ extern uint16_t temperature_endpoint_id;
 extern uint16_t humidity_endpoint_id;
 extern uint16_t voc_endpoint_id;
 
+// default values
+#define DEFAULT_TEMPERATURE_VALUE 1000
+#define DEFAULT_HUMIDITY_VALUE 1000
+#define DEFAULT_VOC_VALUE 1000
+
 #ifdef __cplusplus
 }
 #endif
