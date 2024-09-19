@@ -37,6 +37,7 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg){
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
             ESP_LOGI(TAG, "Commissioning complete");
+            // device_commission_window_close_cb();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:
@@ -53,10 +54,12 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg){
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:
             ESP_LOGI(TAG, "Commissioning window opened");
+            device_commission_window_open_cb();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:
             ESP_LOGI(TAG, "Commissioning window closed");
+            device_commission_window_close_cb();
             break;
 
         default:
@@ -65,6 +68,7 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg){
 }
 static esp_err_t app_identification_cb(identification::callback_type_t type, uint16_t endpoint_id, uint8_t effect_id, uint8_t effect_variant, void *priv_data){
     ESP_LOGI(TAG, "Identification callback: type: %u, effect: %u, variant: %u", type, effect_id, effect_variant);
+    device_identifier_cb();
     return ESP_OK;
 }
 static esp_err_t app_attribute_update_cb(callback_type_t type, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val, void *priv_data){

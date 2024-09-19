@@ -25,7 +25,7 @@ int32_t get_voc_index() {
 }
 
 esp_err_t read_dht_sensor_data() {
-    if (dht_read_float_data(SENSOR_TYPE, (gpio_num_t)CONFIG_GPIO_DHT22_GPIO_PIN, &humidity, &temperature) != ESP_OK) {
+    if (dht_read_float_data(SENSOR_TYPE, (gpio_num_t)CONFIG_GPIO_DHT22_PIN, &humidity, &temperature) != ESP_OK) {
         humidity = 0.0;
         temperature = 0.0;
         ESP_LOGE(TAG, "DHT22 Sensor not found");

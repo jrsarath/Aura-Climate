@@ -121,3 +121,31 @@ driver_handle driver_button_init() {
     iot_button_register_cb(handle, BUTTON_PRESS_DOWN, driver_button_toggle_cb, NULL);
     return (driver_handle)handle;
 }
+
+void device_identifier_cb() {
+    gpio_set_direction((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_MODE_OUTPUT);
+    gpio_set_pull_mode((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_PULLUP_ONLY);
+
+    for (int blink_count = 0; blink_count < 6; blink_count++) {
+        gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 1);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
+    gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
+}
+
+void device_commission_window_open_cb() {
+    gpio_set_direction((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_MODE_OUTPUT);
+    gpio_set_pull_mode((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_PULLUP_ONLY);
+
+    while (1) {
+        gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 1);
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+        gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
+}
+void device_commission_window_close_cb() {
+    gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
+}

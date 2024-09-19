@@ -1,5 +1,5 @@
 menu "Sensor Configuration"
-    config GPIO_DHT22_GPIO_PIN
+    config GPIO_DHT22_PIN
         int "GPIO Pin for DHT22 Sensor"
         default 4
         help
@@ -14,4 +14,9 @@ menu "Sensor Configuration"
         default 22
         help
             The GPIO pin number for I2C Master SCL. Default is 22.
+    config GPIO_INDICATOR_LED
+        int "GPIO Pin for Indicator LED"
+        default 2
+        help
+            The GPIO pin number for inbuilt led/indicator led.
 endmenu
