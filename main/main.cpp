@@ -37,7 +37,6 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg){
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
             ESP_LOGI(TAG, "Commissioning complete");
-            // device_commission_window_close_cb();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:
@@ -54,12 +53,10 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg){
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:
             ESP_LOGI(TAG, "Commissioning window opened");
-            device_commission_window_open_cb();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:
             ESP_LOGI(TAG, "Commissioning window closed");
-            device_commission_window_close_cb();
             break;
 
         default:
