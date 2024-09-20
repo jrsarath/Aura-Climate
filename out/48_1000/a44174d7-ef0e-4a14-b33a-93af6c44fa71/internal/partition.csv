@@ -1,0 +1,19 @@
+key,type,encoding,value
+chip-factory,namespace,,
+discriminator,data,u32,2598
+iteration-count,data,u32,10000
+salt,data,string,oWOZBnu2YPiJlndLjZy+CpSdilfzPe4VqeMshbleho4=
+vendor-id,data,u32,72
+vendor-name,data,string,48 Lab
+product-id,data,u32,4096
+product-name,data,string,Aura Climate
+hardware-ver,data,u32,2
+hw-ver-str,data,string,v2.0
+mfg-date,data,string,2024-09-01
+serial-num,data,string,CL-0001
+dac-cert,file,binary,/Users/sarath/Documents/GitHub/Aura/devices/climate/climate-firmware/out/48_1000/a44174d7-ef0e-4a14-b33a-93af6c44fa71/internal/DAC_cert.der
+dac-key,file,binary,/Users/sarath/Documents/GitHub/Aura/devices/climate/climate-firmware/out/48_1000/a44174d7-ef0e-4a14-b33a-93af6c44fa71/internal/DAC_private_key.bin
+dac-pub-key,file,binary,/Users/sarath/Documents/GitHub/Aura/devices/climate/climate-firmware/out/48_1000/a44174d7-ef0e-4a14-b33a-93af6c44fa71/internal/DAC_public_key.bin
+pai-cert,file,binary,/Users/sarath/Documents/GitHub/Aura/devices/climate/climate-firmware/out/48_1000/staging/pai_cert.der
+verifier,data,string,70aGDNL1XyI6LwWuqjbqCZdBZuuW78dFW5SUIiZOtK4EOcpbLPFeiDu8q4QqKTCdi0snloDzqycNDKkUXOxXvaQ/C95zm6lT8Y+iynAWGlqctr+NfgugN6ancFZW0EDBCg==
+cert-dclrn,file,binary,../../../../../../.espressif/esp-matter/connectedhomeip/connectedhomeip/credentials/test/certification-declaration/Chip-Test-CD-0x0048-0x1000.der
