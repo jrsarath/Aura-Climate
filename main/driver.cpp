@@ -134,7 +134,6 @@ void device_identifier_cb() {
     }
     gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
 }
-
 void device_commission_window_open_cb() {
     gpio_set_direction((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_MODE_OUTPUT);
     gpio_set_pull_mode((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_PULLUP_ONLY);
