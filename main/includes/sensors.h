@@ -1,24 +1,83 @@
 #pragma once
 
-#include "esp_system.h"
-#include <freertos/FreeRTOS.h>
+#include <esp_err.h>
+#include <driver/gpio.h>
+#include <sgp40.h>
+#include "config.h"
 
-#define SENSORS_H
+class SensorBase {
+    protected:
+        bool initialized;
+        uint8_t error_count;
+        const char* sensor_name;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+    public:
+        SensorBase(const char* name) : initialized(false), error_count(0), sensor_name(name) {}
+        virtual ~SensorBase() = default;
+        
+        virtual esp_err_t initialize() = 0;
+        virtual esp_err_t read() = 0;
+        virtual void reset() = 0;
+        
+        bool isInitialized() const { return initialized; }
+        const char* getName() const { return sensor_name; }
+};
 
-esp_err_t read_dht_sensor_data();
-esp_err_t read_sgp_sensor_data();
+class DHTSensor : public SensorBase {
+    private:
+        gpio_num_t gpio_pin;
+        float temperature;
+        float humidity;
 
-float get_temperature();
-float get_humidity();
-int32_t get_voc_index();
+    public:
+        explicit DHTSensor(gpio_num_t pin);
+        ~DHTSensor() override = default;
 
-void initiate_dht();
-void initiate_sgp();
+        esp_err_t initialize() override;
+        esp_err_t read() override;
+        void reset() override;
 
-#ifdef __cplusplus
-}
-#endif
+        float getTemperature() const { return temperature; }
+        float getHumidity() const { return humidity; }
+        bool validateReading() const;
+};
+
+class SGP40Sensor : public SensorBase {
+    private:
+        uint8_t i2c_addr;
+        int32_t voc_index;
+        sgp40_t sgp_dev;
+
+    public:
+        explicit SGP40Sensor(uint8_t addr = SGP40_I2C_ADDR);
+        ~SGP40Sensor() override = default;
+
+        esp_err_t initialize() override;
+        esp_err_t read() override;
+        void reset() override;
+
+        int32_t getVOCIndex() const { return voc_index; }
+        bool validateReading() const;
+};
+
+// Sensor Manager Class
+class SensorManager {
+    private:
+        DHTSensor* dht_sensor;
+        SGP40Sensor* sgp_sensor;
+        bool running;
+        TaskHandle_t task_handle;
+
+        static void readingTask(void* parameters);
+
+    public:
+        SensorManager();
+        ~SensorManager();
+
+        esp_err_t initialize();
+        esp_err_t startReadings();
+        void stopReadings();
+        
+        const DHTSensor* getDHTSensor() const { return dht_sensor; }
+        const SGP40Sensor* getSGP40Sensor() const { return sgp_sensor; }
+};

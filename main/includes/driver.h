@@ -3,6 +3,7 @@
 #include <freertos/FreeRTOS.h>
 #include <esp_err.h>
 #include <esp_matter.h>
+#include "sensors.h"
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include "esp_openthread_types.h"
@@ -32,19 +33,35 @@ driver_handle driver_dht_init();
  * @return NULL in case of failure.
  */
 driver_handle driver_voc_init();
-/** Initialize the button driver
- *
- * This initializes the button driver associated with the selected board.
- *
- * @return Handle on success.
- * @return NULL in case of failure.
+/**
+ * @brief Initialize the button driver with sensor manager
+ * 
+ * @param sensor_manager Pointer to the sensor manager instance
+ * @return driver_handle Handle to the button driver
  */
-driver_handle driver_button_init();
+driver_handle driver_button_init(void* sensor_manager);
 
-void device_identifier_cb();
-void device_commission_window_open_cb();
-void device_commission_window_close_cb();
+/**
+ * @brief Update Matter attributes with current sensor values
+ * 
+ * @param sensor_manager Pointer to the sensor manager instance
+ */
+void update_matter_with_sensor_values(const SensorManager* sensor_manager);
 
+/**
+ * @brief Callback for device identification
+ */
+void device_identifier_cb(void);
+
+/**
+ * @brief Callback for commission window open event
+ */
+void device_commission_window_open_cb(void);
+
+/**
+ * @brief Callback for commission window close event
+ */
+void device_commission_window_close_cb(void);
 
 /** Driver Update
  *
