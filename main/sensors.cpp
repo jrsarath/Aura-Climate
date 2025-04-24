@@ -170,8 +170,10 @@ esp_err_t SensorManager::initialize() {
 
 void SensorManager::readingTask(void* parameters) {
     SensorManager* manager = static_cast<SensorManager*>(parameters);
+    uint32_t last_matter_update = 0;
     
     while (manager->running) {
+        uint32_t current_time = esp_timer_get_time() / 1000;  // Convert to ms
         esp_err_t dht_ret = manager->dht_sensor->read();
         esp_err_t sgp_ret = manager->sgp_sensor->read();
 
@@ -185,13 +187,16 @@ void SensorManager::readingTask(void* parameters) {
 
         if (sgp_ret == ESP_OK && manager->sgp_sensor->validateReading()) {
             ESP_LOGI(TAG, "VOC Index: %ld", manager->sgp_sensor->getVOCIndex());
-            // VOC values are updated in the same update_matter_with_sensor_values call
         } else {
             ESP_LOGW(TAG, "Failed to read SGP sensor or invalid reading");
         }
 
-        // Update Matter attributes
-        update_matter_with_sensor_values(manager);
+        // Update Matter attributes only at the specified interval
+        if (current_time - last_matter_update >= MATTER_UPDATE_INTERVAL_MS) {
+            update_matter_with_sensor_values(manager);
+            last_matter_update = current_time;
+            ESP_LOGI(TAG, "Matter attributes updated");
+        }
 
         vTaskDelay(pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS));
     }
