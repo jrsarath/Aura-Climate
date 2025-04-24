@@ -20,6 +20,7 @@
 #include "includes/sensors.h"
 #include "includes/variables.h"
 #include "includes/config.h"
+#include "includes/ota_manager.h"
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
@@ -106,6 +107,18 @@ extern "C" void app_main() {
         ESP_LOGE(TAG, "Failed to initialize NVS: %s", esp_err_to_name(err));
         return;
     }
+
+    // Initialize OTA manager
+    err = OTAManager::getInstance().initialize();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize OTA manager");
+        return;
+    }
+    
+    // Enable automatic update checks
+    OTAManager::getInstance().enableAutoCheck(true);
+    ESP_LOGI(TAG, "OTA manager initialized, running version: %s", 
+             OTAManager::getInstance().getCurrentVersion());
 
     // Initialize sensor manager
     sensor_manager = new SensorManager();

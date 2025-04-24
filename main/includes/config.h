@@ -25,6 +25,16 @@
 #define SGP40_MIN_VOC_INDEX        0
 #define SGP40_MAX_VOC_INDEX        500
 
+// OTA Configuration
+#define OTA_TASK_STACK_SIZE        8192
+#define OTA_TASK_PRIORITY         5
+#define OTA_CHECK_INTERVAL_MS     3600000  // Check for updates every hour
+#define OTA_FIRMWARE_TIMEOUT_MS   300000   // 5 minutes timeout for firmware download
+#define OTA_MAX_RETRIES          3
+#define OTA_RETRY_DELAY_MS       5000
+#define OTA_BUFFER_SIZE          1024
+#define OTA_ROLLBACK_ENABLED     1         // Enable rollback on failed boot
+
 // Logging Configuration
 #define LOG_BUFFER_SIZE            1024
 #define MAX_LOG_FILES              5

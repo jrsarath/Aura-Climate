@@ -24,8 +24,11 @@ if(NOT DEFINED ENV{ESP_MATTER_DEVICE_PATH})
     endif()
 endif(NOT DEFINED ENV{ESP_MATTER_DEVICE_PATH})
 
-set(PROJECT_VER "1.0")
-set(PROJECT_VER_NUMBER 1)
+# Set project version
+set(PROJECT_VER_MAJOR 1)
+set(PROJECT_VER_MINOR 0)
+set(PROJECT_VER_PATCH 0)
+set(PROJECT_VER "${PROJECT_VER_MAJOR}.${PROJECT_VER_MINOR}.${PROJECT_VER_PATCH}")
 
 set(ESP_MATTER_PATH $ENV{ESP_MATTER_PATH})
 set(MATTER_SDK_PATH ${ESP_MATTER_PATH}/connectedhomeip/connectedhomeip)
@@ -46,7 +49,7 @@ set(EXTRA_COMPONENT_DIRS
     "${ESP_MATTER_PATH}/device_hal/device"
     ${extra_components_dirs_append})
 
-project(climate)
+project(climate VERSION ${PROJECT_VER})
 if(CONFIG_IDF_TARGET_ESP32C2)
     include(relinker)
 endif()
