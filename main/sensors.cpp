@@ -14,9 +14,6 @@
 
 static const char *TAG = "sensors";
 
-// Declare the external variable
-extern uint32_t sgp40_start_time_ms;
-
 // DHT Sensor Implementation
 DHTSensor::DHTSensor(gpio_num_t pin) 
     : SensorBase("DHT22"), gpio_pin(pin), temperature(0.0f), humidity(0.0f) {}
