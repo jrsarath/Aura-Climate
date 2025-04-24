@@ -1,13 +1,10 @@
 #include "includes/variables.h"
 
-sgp40_t sgp;
-
-// Sensor values
-float temperature = 0.0;
-float humidity = 0.0;
-int32_t voc_index = 0;
-
-// Endpoints
+// Matter endpoint IDs
 uint16_t temperature_endpoint_id = 1;
 uint16_t humidity_endpoint_id = 2;
 uint16_t voc_endpoint_id = 3;
+
+// SGP40 sensor timing
+const uint32_t SGP40_WARMUP_TIME_MS = 10000;  // 10 seconds minimum warmup
+uint32_t sgp40_start_time_ms = 0;

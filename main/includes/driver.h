@@ -3,6 +3,9 @@
 #include <freertos/FreeRTOS.h>
 #include <esp_err.h>
 #include <esp_matter.h>
+#include "sensors.h"
+#include "variables.h"
+#include <driver/gpio.h>
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include "esp_openthread_types.h"
@@ -15,53 +18,36 @@ extern "C" {
 #endif
 
 typedef void *driver_handle;
-
-/** Initialize the Temperature driver
- *
- * This initializes the temperature driver associated with the selected board.
- *
- * @return Handle on success.
- * @return NULL in case of failure.
+/**
+ * @brief Initialize the button driver with sensor manager
+ * 
+ * @param sensor_manager Pointer to the sensor manager instance
+ * @return driver_handle Handle to the button driver
  */
-driver_handle driver_dht_init();
-/** Initialize the Air Quality driver
- *
- * This initializes the temperature driver associated with the selected board.
- *
- * @return Handle on success.
- * @return NULL in case of failure.
+driver_handle driver_button_init(void* sensor_manager);
+
+/**
+ * @brief Update Matter attributes with current sensor values
+ * 
+ * @param sensor_manager Pointer to the sensor manager instance
  */
-driver_handle driver_voc_init();
-/** Initialize the button driver
- *
- * This initializes the button driver associated with the selected board.
- *
- * @return Handle on success.
- * @return NULL in case of failure.
+void update_matter_with_sensor_values(const SensorManager* sensor_manager);
+
+/**
+ * @brief Callback for device identification
  */
-driver_handle driver_button_init();
+void device_identifier_cb(void);
 
-void device_identifier_cb();
-void device_commission_window_open_cb();
-void device_commission_window_close_cb();
-
-
-/** Driver Update
- *
- * This API should be called to update the driver for the attribute being updated.
- * This is usually called from the common `app_attribute_update_cb()`.
- *
- * @param[in] endpoint_id Endpoint ID of the attribute.
- * @param[in] cluster_id Cluster ID of the attribute.
- * @param[in] attribute_id Attribute ID of the attribute.
- * @param[in] val Pointer to `esp_matter_attr_val_t`. Use appropriate elements as per the value type.
- *
- * @return ESP_OK on success.
- * @return error in case of failure.
+/**
+ * @brief Callback for commission window open event
  */
-esp_err_t driver_attribute_update(driver_handle driver_handle, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val);
+void device_commission_window_open_cb(void);
 
-esp_err_t sensor_attribute_update_cb(esp_matter::attribute::callback_type_t type, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val, void *priv_data);
+/**
+ * @brief Callback for commission window close event
+ */
+void device_commission_window_close_cb(void);
+
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #define ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG()                                           \
