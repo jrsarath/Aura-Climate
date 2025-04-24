@@ -3,6 +3,7 @@
 #include <string.h>
 #include <esp_log.h>
 #include <esp_matter.h>
+#include <esp_timer.h>
 #include <device.h>
 #include <driver/gpio.h>
 
@@ -18,6 +19,10 @@ using namespace chip::app::Clusters;
 static const char *TAG = "driver";
 
 AirQuality::AirQualityEnum map_voc_index(uint16_t vocIndex) {
+    if (esp_timer_get_time() / 1000 - sgp40_start_time_ms < SGP40_WARMUP_TIME_MS) {
+        return AirQuality::AirQualityEnum::kUnknown;
+    }
+
     if (vocIndex <= 50) {
         return AirQuality::AirQualityEnum::kGood;
     } else if (vocIndex <= 100) {
@@ -43,10 +48,14 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     const SGP40Sensor* sgp = sensor_manager->getSGP40Sensor();
 
     if (dht && dht->validateReading()) {
+        float temp = dht->getTemperature();
+        float humidity = dht->getHumidity();
+        
         // Update temperature values
         esp_matter_attr_val_t temperature_value = esp_matter_invalid(NULL);
-        temperature_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_UINT16;
-        temperature_value.val.u16 = dht->getTemperature() * 100;
+        temperature_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_INT16;
+        temperature_value.val.i16 = static_cast<int16_t>(temp * 100);
+        ESP_LOGI(TAG, "Updating Matter temperature: %.2f°C (raw: %d)", temp, temperature_value.val.i16);
         esp_matter::attribute::update(temperature_endpoint_id, 
                                     TemperatureMeasurement::Id, 
                                     TemperatureMeasurement::Attributes::MeasuredValue::Id, 
@@ -55,7 +64,8 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         // Update humidity values
         esp_matter_attr_val_t humidity_value = esp_matter_invalid(NULL);
         humidity_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_UINT16;
-        humidity_value.val.u16 = dht->getHumidity() * 100;
+        humidity_value.val.u16 = static_cast<uint16_t>(humidity * 100);
+        ESP_LOGI(TAG, "Updating Matter humidity: %.2f%% (raw: %u)", humidity, humidity_value.val.u16);
         esp_matter::attribute::update(humidity_endpoint_id, 
                                     RelativeHumidityMeasurement::Id, 
                                     RelativeHumidityMeasurement::Attributes::MeasuredValue::Id, 
@@ -68,6 +78,7 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         esp_matter_attr_val_t air_quality_value = esp_matter_invalid(NULL);
         air_quality_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_ENUM8;
         air_quality_value.val.u8 = static_cast<uint8_t>(airQuality);
+        ESP_LOGI(TAG, "Updating Matter VOC: index %ld (air quality: %d)", sgp->getVOCIndex(), air_quality_value.val.u8);
         esp_matter::attribute::update(voc_endpoint_id, 
                                     AirQuality::Id, 
                                     AirQuality::Attributes::AirQuality::Id, 
@@ -105,18 +116,32 @@ void device_identifier_cb() {
     gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
 }
 
-void device_commission_window_open_cb() {
-    gpio_set_direction((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_MODE_OUTPUT);
-    gpio_set_pull_mode((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_PULLUP_ONLY);
+static TaskHandle_t led_task_handle = nullptr;
+static bool commission_mode = false;
 
-    while (1) {
+static void led_blink_task(void* pvParameters) {
+    while (commission_mode) {
         gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 1);
         vTaskDelay(200 / portTICK_PERIOD_MS);
         gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
         vTaskDelay(200 / portTICK_PERIOD_MS);
     }
+    gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
+    vTaskDelete(NULL);
+    led_task_handle = nullptr;
+}
+
+void device_commission_window_open_cb() {
+    gpio_set_direction((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_MODE_OUTPUT);
+    gpio_set_pull_mode((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_PULLUP_ONLY);
+    
+    commission_mode = true;
+    if (led_task_handle == nullptr) {
+        xTaskCreate(led_blink_task, "led_task", 2048, NULL, 1, &led_task_handle);
+    }
 }
 
 void device_commission_window_close_cb() {
-    gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
+    commission_mode = false;
+    // Task will clean itself up
 }

@@ -4,6 +4,8 @@
 #include <esp_err.h>
 #include <esp_matter.h>
 #include "sensors.h"
+#include "variables.h"
+#include <driver/gpio.h>
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include "esp_openthread_types.h"

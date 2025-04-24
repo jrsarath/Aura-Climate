@@ -4,13 +4,18 @@
 #include <esp_err.h>
 #include <esp_log.h>
 #include <esp_system.h>
+#include <esp_timer.h>
 #include <dht.h>
 #include <sgp40.h>
 
 #include "includes/sensors.h"
 #include "includes/variables.h"
+#include "includes/driver.h"
 
 static const char *TAG = "sensors";
+
+// Declare the external variable
+extern uint32_t sgp40_start_time_ms;
 
 // DHT Sensor Implementation
 DHTSensor::DHTSensor(gpio_num_t pin) 
@@ -94,6 +99,11 @@ esp_err_t SGP40Sensor::initialize() {
 
     ESP_LOGI(TAG, "SGP40 initialized. Serial: 0x%04x%04x%04x", sgp_dev.serial[0], sgp_dev.serial[1], sgp_dev.serial[2]);
     initialized = true;
+    
+    // Record start time for warmup period
+    sgp40_start_time_ms = esp_timer_get_time() / 1000;
+    ESP_LOGI(TAG, "SGP40 warmup period started");
+    
     return ESP_OK;
 }
 
@@ -172,11 +182,19 @@ void SensorManager::readingTask(void* parameters) {
             ESP_LOGI(TAG, "Temperature: %.1f°C, Humidity: %.1f%%", 
                     manager->dht_sensor->getTemperature(),
                     manager->dht_sensor->getHumidity());
+        } else {
+            ESP_LOGW(TAG, "Failed to read DHT sensor or invalid reading");
         }
 
         if (sgp_ret == ESP_OK && manager->sgp_sensor->validateReading()) {
             ESP_LOGI(TAG, "VOC Index: %ld", manager->sgp_sensor->getVOCIndex());
+            // VOC values are updated in the same update_matter_with_sensor_values call
+        } else {
+            ESP_LOGW(TAG, "Failed to read SGP sensor or invalid reading");
         }
+
+        // Update Matter attributes
+        update_matter_with_sensor_values(manager);
 
         vTaskDelay(pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS));
     }
