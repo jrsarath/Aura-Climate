@@ -43,9 +43,7 @@ void OTAManager::checkForUpdates() {
         return;
     }
 
-    // TODO: Replace with your update server URL
-    const char* update_url = "https://your-update-server.com/firmware.bin";
-    beginUpdate(update_url);
+    beginUpdate(OTA_UPDATE_URL);
 }
 
 esp_err_t OTAManager::beginUpdate(const char* url) {
@@ -76,7 +74,7 @@ esp_err_t OTAManager::beginUpdate(const char* url) {
 
 void OTAManager::updateTask(void* pvParameter) {
     OTAManager* manager = static_cast<OTAManager*>(pvParameter);
-    const char* update_url = "https://your-update-server.com/firmware.bin"; // TODO: Make configurable
+    const char* update_url = OTA_UPDATE_URL;
 
     esp_http_client_config_t config = {
         .url = update_url,
