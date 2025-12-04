@@ -1,18 +1,18 @@
 {
-    "C_Cpp.intelliSenseEngine": "default",
-    "idf.adapterTargetName": "esp32",
-    "idf.customExtraPaths": "/Users/jrsarath/.espressif/tools/xtensa-esp-elf-gdb/14.2_20240403/xtensa-esp-elf-gdb/bin:/Users/jrsarath/.espressif/tools/riscv32-esp-elf-gdb/14.2_20240403/riscv32-esp-elf-gdb/bin:/Users/jrsarath/.espressif/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/bin:/Users/jrsarath/.espressif/tools/riscv32-esp-elf/esp-13.2.0_20240530/riscv32-esp-elf/bin:/Users/jrsarath/.espressif/tools/esp32ulp-elf/2.38_20240113/esp32ulp-elf/bin:/Users/jrsarath/.espressif/tools/cmake/3.30.2/CMake.app/Contents/bin:/Users/jrsarath/.espressif/tools/openocd-esp32/v0.12.0-esp32-20241016/openocd-esp32/bin:/Users/jrsarath/.espressif/tools/ninja/1.12.1:/Users/jrsarath/.espressif/tools/esp-rom-elfs/20240305",
-    "idf.customExtraVars": {
-        "OPENOCD_SCRIPTS": "/Users/jrsarath/.espressif/tools/openocd-esp32/v0.12.0-esp32-20241016/openocd-esp32/share/openocd/scripts",
-        "ESP_ROM_ELF_DIR": "/Users/jrsarath/.espressif/tools/esp-rom-elfs/20240305/"
-    },
-    "idf.espIdfPath": "/Users/jrsarath/esp/v5.3.2/esp-idf",
-    "idf.openOcdConfigs": [
-        "board/esp32-wrover-kit-3.3v.cfg"
-    ],
-    "idf.port": "/dev/tty.usbserial-0001",
-    "idf.pythonBinPath": "/Users/jrsarath/.espressif/python_env/idf5.3_py3.13_env/bin/python",
-    "idf.toolsPath": "/Users/jrsarath/.espressif",
-    "idf.flashType": "UART",
-    "idf.gitPath": "git"
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.openOcdConfigs": [
+    "board/esp32-wrover-kit-3.3v.cfg"
+  ],
+  "idf.customExtraVars": {
+    "OPENOCD_SCRIPTS": "/Users/jrsarath/.espressif/tools/openocd-esp32/v0.12.0-esp32-20241016/openocd-esp32/share/openocd/scripts",
+    "ESP_ROM_ELF_DIR": "/Users/jrsarath/.espressif/tools/esp-rom-elfs/20240305/",
+    "IDF_TARGET": "esp32"
+  },
+  "clangd.path": "/Users/jrsarath/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=/Users/jrsarath/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc",
+    "--compile-commands-dir=/Users/jrsarath/Documents/GitHub/Aura-Climate/build"
+  ],
+  "idf.port": "/dev/tty.usbserial-0001"
 }
