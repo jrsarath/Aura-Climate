@@ -14,5 +14,6 @@
     "--query-driver=/Users/jrsarath/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc",
     "--compile-commands-dir=/Users/jrsarath/Documents/GitHub/Aura-Climate/build"
   ],
-  "idf.port": "/dev/tty.usbserial-0001"
+  "idf.port": "/dev/tty.usbserial-0001",
+  "idf.flashType": "UART"
 }

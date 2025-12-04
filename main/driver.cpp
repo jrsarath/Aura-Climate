@@ -95,12 +95,24 @@ static void driver_button_toggle_cb(void *arg, void *data) {
 }
 
 driver_handle driver_button_init(void* sensor_manager) {
-    button_config_t config = button_driver_get_config();
-    button_handle_t handle = iot_button_create(&config);
-    if (handle) {
-        iot_button_register_cb(handle, BUTTON_PRESS_DOWN, driver_button_toggle_cb, sensor_manager);
+    button_gpio_config_t config = button_driver_get_config();
+    button_dev_t* btn_dev = NULL;
+
+    // Prepare a generic button configuration. Zero values will let the
+    // button implementation fall back to defaults if applicable.
+    button_config_t btn_cfg = {0};
+
+    // Create a GPIO-based button device using the dedicated helper
+    // which accepts a gpio config struct. The previous code passed the
+    // gpio config incorrectly to `iot_button_create`, causing
+    // ESP_ERR_INVALID_ARG at runtime.
+    esp_err_t rc = iot_button_new_gpio_device(&btn_cfg, &config, &btn_dev);
+    if (rc == ESP_OK && btn_dev) {
+        iot_button_register_cb(btn_dev, BUTTON_PRESS_DOWN, NULL, driver_button_toggle_cb, sensor_manager);
+    } else {
+        ESP_LOGE(TAG, "Failed to create GPIO button device: %d", rc);
     }
-    return (driver_handle)handle;
+    return (driver_handle)btn_dev;
 }
 
 void device_identifier_cb() {
