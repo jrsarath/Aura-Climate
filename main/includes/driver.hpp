@@ -3,28 +3,32 @@
 #include <freertos/FreeRTOS.h>
 #include <esp_err.h>
 #include <esp_matter.h>
-#include "sensors.h"
-#include "variables.h"
 #include <driver/gpio.h>
+#include "variables.hpp"
+#include "sensors.hpp"
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include "esp_openthread_types.h"
 #endif
 
-#define DRIVER_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+using namespace esp_matter;
+using namespace esp_matter::attribute;
+using namespace esp_matter::endpoint;
+using namespace chip::app::Clusters;
 
 typedef void *driver_handle;
+
 /**
- * @brief Initialize the button driver with sensor manager
- * 
- * @param sensor_manager Pointer to the sensor manager instance
- * @return driver_handle Handle to the button driver
+ * @brief Start a non-blocking identification pulse on the physical switch.
+ *
  */
-driver_handle driver_button_init(void* sensor_manager);
+void driver_identify_pulse(uint16_t endpoint_id);
+
+/**
+ * @brief Stop any running identification pulse.
+ * 
+ */
+void driver_identify_stop(void);
 
 /**
  * @brief Update Matter attributes with current sensor values
@@ -34,38 +38,8 @@ driver_handle driver_button_init(void* sensor_manager);
 void update_matter_with_sensor_values(const SensorManager* sensor_manager);
 
 /**
- * @brief Callback for device identification
+ * @brief Initialize the button driver
+ * 
+ * @return driver_handle 
  */
-void device_identifier_cb(void);
-
-/**
- * @brief Callback for commission window open event
- */
-void device_commission_window_open_cb(void);
-
-/**
- * @brief Callback for commission window close event
- */
-void device_commission_window_close_cb(void);
-
-
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-#define ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG()                                           \
-    {                                                                                   \
-        .radio_mode = RADIO_MODE_NATIVE,                                                \
-    }
-
-#define ESP_OPENTHREAD_DEFAULT_HOST_CONFIG()                                            \
-    {                                                                                   \
-        .host_connection_mode = HOST_CONNECTION_MODE_NONE,                              \
-    }
-
-#define ESP_OPENTHREAD_DEFAULT_PORT_CONFIG()                                            \
-    {                                                                                   \
-        .storage_partition_name = "nvs", .netif_queue_size = 10, .task_queue_size = 10, \
-    }
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+driver_handle driver_button_init(void);

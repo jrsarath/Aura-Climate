@@ -2,10 +2,15 @@
 #include <esp_system.h>
 #include <esp_https_ota.h>
 #include <esp_app_format.h>
-#include "includes/ota_manager.h"
+#include "includes/ota_manager.hpp"
 
 static const char* TAG = "ota_manager";
 
+/**
+ * @brief Initialize the OTA manager and check for any pending OTA updates.
+ * 
+ * @return esp_err_t 
+ */
 esp_err_t OTAManager::initialize() {
     const esp_app_desc_t* app_desc = esp_app_get_description();
     strncpy(current_version, app_desc->version, sizeof(current_version) - 1);
@@ -37,6 +42,10 @@ esp_err_t OTAManager::initialize() {
     return ESP_OK;
 }
 
+/**
+ * @brief Check for available OTA updates and initiate update if found.
+ * 
+ */
 void OTAManager::checkForUpdates() {
     if (update_in_progress) {
         ESP_LOGW(TAG, "Update already in progress");
@@ -46,6 +55,10 @@ void OTAManager::checkForUpdates() {
     beginUpdate(OTA_UPDATE_URL);
 }
 
+/** 
+ * @brief Begin the OTA update process from the specified URL.
+ * 
+ */
 esp_err_t OTAManager::beginUpdate(const char* url) {
     if (update_in_progress) {
         return ESP_ERR_INVALID_STATE;
@@ -72,6 +85,10 @@ esp_err_t OTAManager::beginUpdate(const char* url) {
     return ESP_OK;
 }
 
+/** 
+ * @brief Task function to perform the OTA update.
+ * 
+ */
 void OTAManager::updateTask(void* pvParameter) {
     OTAManager* manager = static_cast<OTAManager*>(pvParameter);
     const char* update_url = OTA_UPDATE_URL;
@@ -101,6 +118,11 @@ void OTAManager::updateTask(void* pvParameter) {
     vTaskDelete(NULL);
 }
 
+/** 
+ * @brief Enable or disable automatic periodic OTA checks.
+ * 
+ * @param enable True to enable, false to disable.
+ */
 void OTAManager::enableAutoCheck(bool enable) {
     if (enable && !auto_check_enabled) {
         startAutoCheckTask();
@@ -110,6 +132,10 @@ void OTAManager::enableAutoCheck(bool enable) {
     auto_check_enabled = enable;
 }
 
+/** 
+ * @brief Start the periodic OTA check task.
+ * 
+ */
 void OTAManager::startAutoCheckTask() {
     xTaskCreate(
         [](void* pvParameter) {
@@ -130,6 +156,10 @@ void OTAManager::startAutoCheckTask() {
     );
 }
 
+/** 
+ * @brief Stop the periodic OTA check task.
+ * 
+ */
 void OTAManager::stopAutoCheckTask() {
     if (task_handle) {
         vTaskDelete(task_handle);
