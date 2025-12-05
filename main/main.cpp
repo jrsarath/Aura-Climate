@@ -44,12 +44,12 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
             ESP_LOGI(TAG, "Commissioning complete");
-            argb_stop_commissioning();
+            // argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:
             ESP_LOGI(TAG, "Commissioning failed, fail safe timer expired");
-            argb_stop_commissioning();
+            // argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStarted:
@@ -58,18 +58,18 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStopped:
             ESP_LOGI(TAG, "Commissioning session stopped");
-            argb_stop_commissioning();
+            // argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:
             ESP_LOGI(TAG, "Commissioning window opened");
             // Start non-blocking commissioning glow on GPIO 8 (single pixel)
-            argb_start_commissioning(8, 1);
+            // argb_start_commissioning(8, 1);
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:
             ESP_LOGI(TAG, "Commissioning window closed");
-            argb_stop_commissioning();
+            // argb_stop_commissioning();
             break;
 
         default:
@@ -217,7 +217,7 @@ extern "C" void app_main() {
     }
 
     // Initial Matter attribute update
-    // update_matter_with_sensor_values(sensor_manager);
+    update_matter_with_sensor_values(sensor_manager);
 
     #if CONFIG_ENABLE_CHIP_SHELL
         esp_matter::console::diagnostics_register_commands();
