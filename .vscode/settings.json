@@ -8,10 +8,10 @@
     "ESP_ROM_ELF_DIR": "/Users/jrsarath/.espressif/tools/esp-rom-elfs/20240305/",
     "IDF_TARGET": "esp32"
   },
-  "clangd.path": "/Users/jrsarath/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
+  "clangd.path": "/Users/jrsarath/.espressif/tools/esp-clang/16.0.1-fe4f10a809/esp-clang/bin/clangd",
   "clangd.arguments": [
     "--background-index",
-    "--query-driver=/Users/jrsarath/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc",
+    "--query-driver=/Users/jrsarath/.espressif/tools/xtensa-esp-elf/esp-13.2.0_20240530/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc",
     "--compile-commands-dir=/Users/jrsarath/Documents/GitHub/Aura-Climate/build"
   ],
   "idf.port": "/dev/tty.usbserial-0001",

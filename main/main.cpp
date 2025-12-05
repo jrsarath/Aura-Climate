@@ -8,19 +8,19 @@
 #include <esp_matter.h>
 #include <esp_matter_ota.h>
 #include <esp_matter_console.h>
-#include <app_reset.h>
-#include <app/server/Server.h>
-#include <app/server/CommissioningWindowManager.h>
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include <platform/ESP32/OpenthreadLauncher.h>
 #endif
 
-#include "includes/driver.h"
-#include "includes/sensors.h"
-#include "includes/variables.h"
-#include "includes/config.h"
-#include "includes/ota_manager.h"
+#include <app/server/Server.h>
+#include <app/server/CommissioningWindowManager.h>
+
+#include "includes/config.hpp"
+#include "includes/variables.hpp"
+#include "includes/driver.hpp"
+#include "includes/ota_manager.hpp"
+#include "includes/utils.hpp"
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
@@ -30,7 +30,12 @@ using namespace chip::app::Clusters;
 static const char *TAG = "matter";
 static SensorManager* sensor_manager = nullptr;
 
-// Matter callbacks
+/**
+ * @brief Application event callback
+ * 
+ * @param event Pointer to the ChipDeviceEvent
+ * @param arg   Argument passed during registration
+ */
 static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
     switch (event->Type) {
         case chip::DeviceLayer::DeviceEventType::kInterfaceIpAddressChanged:
@@ -39,32 +44,32 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
             ESP_LOGI(TAG, "Commissioning complete");
-            device_commission_window_close_cb();
+            // argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:
             ESP_LOGI(TAG, "Commissioning failed, fail safe timer expired");
-            device_commission_window_close_cb();
+            // argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStarted:
             ESP_LOGI(TAG, "Commissioning session started");
-            device_commission_window_open_cb();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStopped:
             ESP_LOGI(TAG, "Commissioning session stopped");
-            device_commission_window_close_cb();
+            // argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:
             ESP_LOGI(TAG, "Commissioning window opened");
-            device_commission_window_open_cb();
+            // Start non-blocking commissioning glow on GPIO 8 (single pixel)
+            // argb_start_commissioning(8, 1);
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:
             ESP_LOGI(TAG, "Commissioning window closed");
-            device_commission_window_close_cb();
+            // argb_stop_commissioning();
             break;
 
         default:
@@ -72,39 +77,54 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
     }
 }
 
-static esp_err_t app_identification_cb(identification::callback_type_t type, uint16_t endpoint_id, 
-                                     uint8_t effect_id, uint8_t effect_variant, void *priv_data) {
+/**
+ * @brief  Identification callback
+ * 
+ * @param type        Type of the identification event
+ * @param endpoint_id Endpoint ID of the identified device
+ * @param effect_id   Effect ID
+ * @param effect_variant Effect variant
+ * @param priv_data   Private data pointer
+ */
+static esp_err_t app_identification_cb(identification::callback_type_t type, uint16_t endpoint_id, uint8_t effect_id, uint8_t effect_variant, void *priv_data) {
     ESP_LOGI(TAG, "Identification callback: type: %u, effect: %u, variant: %u", type, effect_id, effect_variant);
-    device_identifier_cb();
-    return ESP_OK;
-}
-
-static esp_err_t app_attribute_update_cb(callback_type_t type, uint16_t endpoint_id, 
-                                       uint32_t cluster_id, uint32_t attribute_id,
-                                       esp_matter_attr_val_t *val, void *priv_data) {
-    if (type == PRE_UPDATE) {
-        ESP_LOGI(TAG, "Attribute pre-update - endpoint: %u, cluster: %lu, attribute: %lu",
-                 endpoint_id, cluster_id, attribute_id);
+    if (type == identification::callback_type_t::START) {
+        driver_identify_pulse(endpoint_id);
+    } else if (type == identification::callback_type_t::STOP) {
+        driver_identify_stop();
     }
     return ESP_OK;
 }
 
-static esp_err_t initialize_nvs() {
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
+/**
+ * @brief Attribute update callback
+ * 
+ * @param type          Type of the callback (PRE_UPDATE/POST_UPDATE)
+ * @param endpoint_id   Endpoint ID of the attribute
+ * @param cluster_id    Cluster ID of the attribute
+ * @param attribute_id  Attribute ID
+ * @param val           Pointer to the attribute value
+ * @param priv_data     Private data pointer
+ */
+static esp_err_t app_attribute_update_cb(callback_type_t type, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id, esp_matter_attr_val_t *val, void *priv_data) {
+    esp_err_t err = ESP_OK;
+    if (type == PRE_UPDATE) {
+        // Do Nothing
     }
     return err;
 }
 
+/**
+ * @brief Application main entry point
+ * 
+ */
 extern "C" void app_main() {
     esp_err_t err = ESP_OK;
 
     // Initialize NVS
-    err = initialize_nvs();
+    err = nvs_flash_init();
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize NVS: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Failed to initialize NVS: %d", err);
         return;
     }
 
@@ -117,8 +137,7 @@ extern "C" void app_main() {
     
     // Enable automatic update checks
     OTAManager::getInstance().enableAutoCheck(true);
-    ESP_LOGI(TAG, "OTA manager initialized, running version: %s", 
-             OTAManager::getInstance().getCurrentVersion());
+    ESP_LOGI(TAG, "OTA manager initialized, running version: %s", OTAManager::getInstance().getCurrentVersion());
 
     // Initialize sensor manager
     sensor_manager = new SensorManager();
@@ -128,8 +147,8 @@ extern "C" void app_main() {
         return;
     }
 
-    // Initialize button with sensor manager
-    driver_handle button_handle = driver_button_init(sensor_manager);
+    // Initialize reset button
+    driver_handle button_handle = driver_button_init();
     if (!button_handle) {
         ESP_LOGE(TAG, "Failed to initialize button");
         return;
@@ -177,6 +196,7 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "AQI endpoint created with ID %d", voc_endpoint_id);
 
     #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
+        // Set OpenThread platform config
         esp_openthread_platform_config_t config = {
             .radio_config = ESP_OPENTHREAD_DEFAULT_RADIO_CONFIG(),
             .host_config = ESP_OPENTHREAD_DEFAULT_HOST_CONFIG(),
@@ -187,10 +207,7 @@ extern "C" void app_main() {
 
     // Start Matter
     err = esp_matter::start(app_event_cb);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to start Matter: %s", esp_err_to_name(err));
-        return;
-    }
+    abort_on_failure(err == ESP_OK, TAG, "Failed to start Matter, err:%d", err);
 
     // Start sensor readings
     err = sensor_manager->startReadings();
@@ -205,8 +222,10 @@ extern "C" void app_main() {
     #if CONFIG_ENABLE_CHIP_SHELL
         esp_matter::console::diagnostics_register_commands();
         esp_matter::console::wifi_register_commands();
+        esp_matter::console::factoryreset_register_commands();
+    #if CONFIG_OPENTHREAD_CLI
+        esp_matter::console::otcli_register_commands();
+    #endif
         esp_matter::console::init();
     #endif
-
-    ESP_LOGI(TAG, "Matter device initialized successfully");
 }

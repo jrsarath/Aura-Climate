@@ -8,9 +8,9 @@
 #include <dht.h>
 #include <sgp40.h>
 
-#include "includes/sensors.h"
-#include "includes/variables.h"
-#include "includes/driver.h"
+#include "includes/sensors.hpp"
+#include "includes/variables.hpp"
+#include "includes/driver.hpp"
 
 static const char *TAG = "sensors";
 
@@ -18,12 +18,22 @@ static const char *TAG = "sensors";
 DHTSensor::DHTSensor(gpio_num_t pin) 
     : SensorBase("DHT22"), gpio_pin(pin), temperature(0.0f), humidity(0.0f) {}
 
+/**
+ * @brief Initialize the DHT sensor.
+ * 
+ * @return esp_err_t 
+ */
 esp_err_t DHTSensor::initialize() {
     ESP_LOGI(TAG, "Initializing %s sensor on GPIO %d", sensor_name, gpio_pin);
     initialized = true;
     return ESP_OK;
 }
 
+/**
+ * @brief Read data from the DHT sensor.
+ * 
+ * @return esp_err_t 
+ */
 esp_err_t DHTSensor::read() {
     if (!initialized) {
         ESP_LOGE(TAG, "%s sensor not initialized", sensor_name);
@@ -54,12 +64,20 @@ esp_err_t DHTSensor::read() {
     return ESP_FAIL;
 }
 
+/**
+ * @brief Reset the DHT sensor readings and error count.
+ * 
+ */
 void DHTSensor::reset() {
     temperature = 0.0f;
     humidity = 0.0f;
     error_count = 0;
 }
 
+/** 
+ * @brief Validate the DHT sensor readings.
+ * 
+ */
 bool DHTSensor::validateReading() const {
     return temperature >= DHT_MIN_TEMPERATURE && temperature <= DHT_MAX_TEMPERATURE &&
            humidity >= DHT_MIN_HUMIDITY && humidity <= DHT_MAX_HUMIDITY;
@@ -71,6 +89,11 @@ SGP40Sensor::SGP40Sensor(uint8_t addr)
     memset(&sgp_dev, 0, sizeof(sgp_dev));
 }
 
+/**
+ * @brief Initialize the SGP40 sensor.
+ * 
+ * @return esp_err_t 
+ */
 esp_err_t SGP40Sensor::initialize() {
     ESP_LOGI(TAG, "Initializing %s sensor at address 0x%x", sensor_name, i2c_addr);
     
@@ -104,6 +127,11 @@ esp_err_t SGP40Sensor::initialize() {
     return ESP_OK;
 }
 
+/**
+ * @brief Read data from the SGP40 sensor.
+ * 
+ * @return esp_err_t 
+ */
 esp_err_t SGP40Sensor::read() {
     if (!initialized) {
         ESP_LOGE(TAG, "%s sensor not initialized", sensor_name);
@@ -131,11 +159,19 @@ esp_err_t SGP40Sensor::read() {
     return ESP_FAIL;
 }
 
+/**
+ * @brief Reset the SGP40 sensor readings and error count.
+ * 
+ */
 void SGP40Sensor::reset() {
     voc_index = 0;
     error_count = 0;
 }
 
+/** 
+ * @brief Validate the SGP40 sensor reading.
+ * 
+ */
 bool SGP40Sensor::validateReading() const {
     return voc_index >= SGP40_MIN_VOC_INDEX && voc_index <= SGP40_MAX_VOC_INDEX;
 }
@@ -143,12 +179,20 @@ bool SGP40Sensor::validateReading() const {
 // Sensor Manager Implementation
 SensorManager::SensorManager() : dht_sensor(nullptr), sgp_sensor(nullptr), running(false), task_handle(nullptr) {}
 
+/** 
+ * @brief Destructor to clean up sensors and stop readings.
+ * 
+ */
 SensorManager::~SensorManager() {
     stopReadings();
     delete dht_sensor;
     delete sgp_sensor;
 }
 
+/** 
+ * @brief Initialize all sensors.
+ * 
+ */
 esp_err_t SensorManager::initialize() {
     dht_sensor = new DHTSensor((gpio_num_t)CONFIG_GPIO_DHT22_PIN);
     sgp_sensor = new SGP40Sensor();
@@ -168,6 +212,10 @@ esp_err_t SensorManager::initialize() {
     return ESP_OK;
 }
 
+/** 
+ * @brief Task to periodically read sensors and update Matter attributes.
+ * 
+ */
 void SensorManager::readingTask(void* parameters) {
     SensorManager* manager = static_cast<SensorManager*>(parameters);
     uint32_t last_matter_update = 0;
@@ -204,6 +252,11 @@ void SensorManager::readingTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
+/**
+ * @brief Start the sensor reading task.
+ * 
+ * @return esp_err_t 
+ */
 esp_err_t SensorManager::startReadings() {
     if (running) {
         return ESP_OK;
@@ -228,6 +281,10 @@ esp_err_t SensorManager::startReadings() {
     return ESP_OK;
 }
 
+/**
+ * @brief Stop the sensor reading task.
+ * 
+ */
 void SensorManager::stopReadings() {
     if (!running) {
         return;

@@ -1,10 +1,14 @@
 #pragma once
 
 #include <esp_err.h>
-#include <driver/gpio.h>
 #include <sgp40.h>
-#include "config.h"
+#include <driver/gpio.h>
+#include "config.hpp"
 
+/**
+ * @brief Base class for all sensors.
+ * 
+ */
 class SensorBase {
     protected:
         bool initialized;
@@ -23,6 +27,10 @@ class SensorBase {
         const char* getName() const { return sensor_name; }
 };
 
+/**
+ * @brief DHT sensor class for temperature and humidity measurements.
+ * 
+ */
 class DHTSensor : public SensorBase {
     private:
         gpio_num_t gpio_pin;
@@ -42,6 +50,10 @@ class DHTSensor : public SensorBase {
         bool validateReading() const;
 };
 
+/**
+ * @brief SGP40 sensor class for VOC index measurements.
+ * 
+ */
 class SGP40Sensor : public SensorBase {
     private:
         uint8_t i2c_addr;
@@ -60,7 +72,10 @@ class SGP40Sensor : public SensorBase {
         bool validateReading() const;
 };
 
-// Sensor Manager Class
+/**
+ * @brief Manages all sensors and their readings.
+ * 
+ */
 class SensorManager {
     private:
         DHTSensor* dht_sensor;

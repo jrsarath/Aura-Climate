@@ -2,22 +2,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <esp_log.h>
+#include "bsp/esp-bsp.h"
 #include <esp_matter.h>
-#include <esp_timer.h>
-#include <device.h>
+#include <inttypes.h>
 #include <driver/gpio.h>
+#include <button_gpio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
-#include "includes/driver.h"
-#include "includes/sensors.h"
-#include "includes/variables.h"
-#include "includes/config.h"
+#include "includes/config.hpp"
+#include "includes/variables.hpp"
+#include "includes/driver.hpp"
+#include "includes/sensors.hpp"
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
 using namespace chip::app::Clusters;
 
 static const char *TAG = "driver";
-
+// Identification pulse state (driver-side)
+static TaskHandle_t s_ident_task_drv = NULL;
+static volatile bool s_ident_running_drv = false;
+static uint16_t s_ident_count_drv = 0;
+static gpio_num_t s_ident_gpio_drv = GPIO_NUM_NC;
 AirQuality::AirQualityEnum map_voc_index(uint16_t vocIndex) {
     if (esp_timer_get_time() / 1000 - sgp40_start_time_ms < SGP40_WARMUP_TIME_MS) {
         return AirQuality::AirQualityEnum::kUnknown;
@@ -38,6 +45,111 @@ AirQuality::AirQualityEnum map_voc_index(uint16_t vocIndex) {
     }
 }
 
+
+/**
+ * @brief Identification task for driver
+ * 
+ * @param arg 
+ */
+static void identification_task_drv(void *arg) {
+    (void)arg;
+    ESP_LOGI(TAG, "Driver identification task started (blinks=%u)", s_ident_count_drv);
+
+    const uint32_t on_ms = 2000;
+
+    int orig_level = -1;
+    if (s_ident_gpio_drv != GPIO_NUM_NC) {
+        // ensure gpio is output so we can set level
+        gpio_set_direction(s_ident_gpio_drv, GPIO_MODE_OUTPUT);
+        orig_level = gpio_get_level(s_ident_gpio_drv);
+    }
+
+    // Single simple toggle: set opposite, wait 2s, restore original
+    if (s_ident_gpio_drv != GPIO_NUM_NC && orig_level >= 0) {
+        ESP_LOGI(TAG, "Driver identification task, Setting GPIO %d to %d", s_ident_gpio_drv, !orig_level);
+        gpio_set_level(s_ident_gpio_drv, !orig_level);
+        vTaskDelay(pdMS_TO_TICKS(on_ms));
+        ESP_LOGI(TAG, "Driver identification task, Returning GPIO %d to %d", s_ident_gpio_drv, orig_level);
+        gpio_set_level(s_ident_gpio_drv, orig_level);
+    }
+
+    ESP_LOGI(TAG, "Driver identification task stopping");
+    s_ident_running_drv = false;
+    TaskHandle_t t = s_ident_task_drv;
+    s_ident_task_drv = NULL;
+    if (t) vTaskDelete(NULL);
+}
+
+/**
+ * @brief Input button callback
+ * 
+ * @param arg 
+ * @param data 
+ */
+static void driver_button_toggle_cb(void *arg, void *data) {
+    ESP_LOGI(TAG, "Toggle button pressed");
+}
+
+/**
+ * @brief Start the driver identification pulse
+ * 
+ * @param endpoint_id 
+ */
+void driver_identify_pulse(uint16_t endpoint_id) {
+    // cancel previous
+    if (s_ident_running_drv) {
+        driver_identify_stop();
+    }
+
+    uint32_t blinks = 3;
+
+    // TODO: Define different color blink for different sensors
+    // gpio_num_t gpio = get_gpio_by_endpoint(endpoint_id);
+    // if (gpio == GPIO_NUM_NC) {
+    //     ESP_LOGE(TAG, "No GPIO mapping for endpoint %d", endpoint_id);
+    //     return;
+    // }
+
+    // s_ident_gpio_drv = gpio;
+    // s_ident_count_drv = blinks;
+    // s_ident_running_drv = true;
+
+    // BaseType_t created = xTaskCreate(identification_task_drv, "drv_ident", 3072, NULL, tskIDLE_PRIORITY + 1, &s_ident_task_drv);
+    // if (created != pdPASS) {
+    //     ESP_LOGE(TAG, "Failed to create driver identification task");
+    //     s_ident_running_drv = false;
+    //     s_ident_task_drv = NULL;
+    // }
+}
+
+/**
+ * @brief Stop the driver identification pulse
+ * 
+ */
+void driver_identify_stop(void) {
+    if (!s_ident_running_drv && s_ident_task_drv == NULL) return;
+    s_ident_running_drv = false;
+    // Wait long enough for the single toggle to finish (on_ms ~= 2000ms)
+    const TickType_t wait_ticks = pdMS_TO_TICKS(3000);
+    const TickType_t poll_ticks = pdMS_TO_TICKS(50);
+    TickType_t waited = 0;
+    while (s_ident_task_drv != NULL && waited < wait_ticks) {
+        vTaskDelay(poll_ticks);
+        waited += poll_ticks;
+    }
+    if (s_ident_task_drv != NULL) {
+        vTaskDelete(s_ident_task_drv);
+        s_ident_task_drv = NULL;
+    }
+    s_ident_running_drv = false;
+    s_ident_gpio_drv = GPIO_NUM_NC;
+}
+
+/**
+ * @brief Update Matter attributes with current sensor values
+ * 
+ * @param sensor_manager Pointer to the SensorManager instance
+ */
 void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     if (!sensor_manager) {
         ESP_LOGE(TAG, "Invalid sensor manager pointer");
@@ -86,74 +198,15 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     }
 }
 
-static void driver_button_toggle_cb(void *arg, void *data) {
-    ESP_LOGI(TAG, "Toggle button pressed");
-    SensorManager* sensor_manager = static_cast<SensorManager*>(data);
-    if (sensor_manager) {
-        update_matter_with_sensor_values(sensor_manager);
-    }
-}
-
-driver_handle driver_button_init(void* sensor_manager) {
-    button_gpio_config_t config = button_driver_get_config();
-    button_dev_t* btn_dev = NULL;
-
-    // Prepare a generic button configuration. Zero values will let the
-    // button implementation fall back to defaults if applicable.
-    button_config_t btn_cfg = {0};
-
-    // Create a GPIO-based button device using the dedicated helper
-    // which accepts a gpio config struct. The previous code passed the
-    // gpio config incorrectly to `iot_button_create`, causing
-    // ESP_ERR_INVALID_ARG at runtime.
-    esp_err_t rc = iot_button_new_gpio_device(&btn_cfg, &config, &btn_dev);
-    if (rc == ESP_OK && btn_dev) {
-        iot_button_register_cb(btn_dev, BUTTON_PRESS_DOWN, NULL, driver_button_toggle_cb, sensor_manager);
-    } else {
-        ESP_LOGE(TAG, "Failed to create GPIO button device: %d", rc);
-    }
-    return (driver_handle)btn_dev;
-}
-
-void device_identifier_cb() {
-    gpio_set_direction((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_MODE_OUTPUT);
-    gpio_set_pull_mode((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_PULLUP_ONLY);
-
-    for (int blink_count = 0; blink_count < 6; blink_count++) {
-        gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 1);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-    }
-    gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
-}
-
-static TaskHandle_t led_task_handle = nullptr;
-static bool commission_mode = false;
-
-static void led_blink_task(void* pvParameters) {
-    while (commission_mode) {
-        gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 1);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
-        gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
-    }
-    gpio_set_level((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, 0);
-    vTaskDelete(NULL);
-    led_task_handle = nullptr;
-}
-
-void device_commission_window_open_cb() {
-    gpio_set_direction((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_MODE_OUTPUT);
-    gpio_set_pull_mode((gpio_num_t)CONFIG_GPIO_INDICATOR_LED, GPIO_PULLUP_ONLY);
+/**
+ * @brief Initialize the driver button.
+ * 
+ * @return A driver handle for the initialized button.
+ */
+driver_handle driver_button_init() {
+    button_handle_t btns[BSP_BUTTON_NUM];
+    ESP_ERROR_CHECK(bsp_iot_button_create(btns, NULL, BSP_BUTTON_NUM));
+    ESP_ERROR_CHECK(iot_button_register_cb(btns[0], BUTTON_PRESS_DOWN, NULL, driver_button_toggle_cb, NULL));
     
-    commission_mode = true;
-    if (led_task_handle == nullptr) {
-        xTaskCreate(led_blink_task, "led_task", 2048, NULL, 1, &led_task_handle);
-    }
-}
-
-void device_commission_window_close_cb() {
-    commission_mode = false;
-    // Task will clean itself up
+    return (driver_handle)btns[0];
 }
