@@ -96,11 +96,12 @@ void OTAManager::updateTask(void* pvParameter) {
     OTAManager* manager = static_cast<OTAManager*>(pvParameter);
     const char* update_url = OTA_UPDATE_URL;
 
-    esp_http_client_config_t config = {
-        .url = update_url,
-        .timeout_ms = OTA_FIRMWARE_TIMEOUT_MS,
-        .keep_alive_enable = true,
-    };
+    esp_http_client_config_t config = {};
+    config.url = update_url;
+    config.timeout_ms = OTA_FIRMWARE_TIMEOUT_MS;
+    config.keep_alive_enable = true;
+    config.crt_bundle_attach = esp_crt_bundle_attach;
+
 
     esp_https_ota_config_t ota_config = {
         .http_config = &config,

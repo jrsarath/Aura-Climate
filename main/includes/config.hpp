@@ -34,7 +34,7 @@
 #define OTA_RETRY_DELAY_MS       5000
 #define OTA_BUFFER_SIZE          1024
 #define OTA_ROLLBACK_ENABLED     1         // Enable rollback on failed boot
-#define OTA_UPDATE_URL           "https://ota.48studios.dev/aura/climate"
+#define OTA_UPDATE_URL           "https://ota.48studios.dev/aura/2/climate"
 
 // Logging Configuration
 #define LOG_BUFFER_SIZE            1024
