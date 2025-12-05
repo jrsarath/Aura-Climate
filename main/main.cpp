@@ -186,15 +186,15 @@ extern "C" void app_main() {
     ESP_LOGI(TAG, "Humidity endpoint created with ID %d", humidity_endpoint_id);
 
     // Configure Air Quality Sensor
-    air_quality_sensor::config_t voc_config;
-    endpoint_t *voc_endpoint = air_quality_sensor::create(node, &voc_config, ENDPOINT_FLAG_NONE, nullptr);
-    if (!voc_endpoint) {
+    air_quality_sensor::config_t air_quality_config;
+    endpoint_t *air_quality_endpoint = air_quality_sensor::create(node, &air_quality_config, ENDPOINT_FLAG_NONE, nullptr);
+    if (!air_quality_endpoint) {
         ESP_LOGE(TAG, "Failed to create air quality endpoint");
         return;
     }
-    voc_endpoint_id = endpoint::get_id(voc_endpoint);
-    ESP_LOGI(TAG, "AQI endpoint created with ID %d", voc_endpoint_id);
-
+    air_quality_endpoint_id = endpoint::get_id(air_quality_endpoint);
+    ESP_LOGI(TAG, "AQI endpoint created with ID %d", air_quality_endpoint_id);
+    
     #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
         // Set OpenThread platform config
         esp_openthread_platform_config_t config = {
@@ -213,6 +213,14 @@ extern "C" void app_main() {
     err = sensor_manager->startReadings();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start sensor readings");
+        return;
+    }
+
+    // Initialize Air Quality Instance for attribute management
+    // This is required because the AirQuality attribute is managed internally by CHIP
+    err = driver_air_quality_init(air_quality_endpoint_id);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize Air Quality Instance");
         return;
     }
 

@@ -38,6 +38,14 @@ void driver_identify_stop(void);
 void update_matter_with_sensor_values(const SensorManager* sensor_manager);
 
 /**
+ * @brief Initialize the Air Quality Instance
+ * 
+ * @param endpoint_id The endpoint ID for the air quality sensor
+ * @return esp_err_t ESP_OK on success, ESP_FAIL on failure
+ */
+esp_err_t driver_air_quality_init(uint16_t endpoint_id);
+
+/**
  * @brief Initialize the button driver
  * 
  * @return driver_handle 
