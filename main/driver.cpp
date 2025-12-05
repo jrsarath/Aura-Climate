@@ -9,6 +9,10 @@
 #include <button_gpio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include <app/clusters/air-quality-server/air-quality-server.h>
+#include <app/util/attribute-storage.h>
+#include <lib/support/BitMask.h>
+#include <platform/CHIPDeviceLayer.h>
 
 #include "includes/config.hpp"
 #include "includes/variables.hpp"
@@ -25,6 +29,9 @@ static TaskHandle_t s_ident_task_drv = NULL;
 static volatile bool s_ident_running_drv = false;
 static uint16_t s_ident_count_drv = 0;
 static gpio_num_t s_ident_gpio_drv = GPIO_NUM_NC;
+
+// Air Quality Instance for managing air quality attributes
+static AirQuality::Instance* s_airQualityInstance = nullptr;
 AirQuality::AirQualityEnum map_voc_index(uint16_t vocIndex) {
     if (esp_timer_get_time() / 1000 - sgp40_start_time_ms < SGP40_WARMUP_TIME_MS) {
         return AirQuality::AirQualityEnum::kUnknown;
@@ -146,6 +153,47 @@ void driver_identify_stop(void) {
 }
 
 /**
+ * @brief Initialize the Air Quality Instance
+ * 
+ * @param endpoint_id The endpoint ID for the air quality sensor
+ * @return esp_err_t ESP_OK on success, ESP_FAIL on failure
+ */
+esp_err_t driver_air_quality_init(uint16_t endpoint_id) {
+    // If the Air Quality cluster is not present on this endpoint, skip init to avoid abort
+    if (!emberAfContainsServer(chip::EndpointId(endpoint_id), AirQuality::Id)) {
+        ESP_LOGW(TAG, "Air Quality cluster not present on endpoint %u; skipping AQ instance init", endpoint_id);
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    // Create Air Quality Instance with features
+    s_airQualityInstance = new AirQuality::Instance(
+        chip::EndpointId(endpoint_id),
+        chip::BitMask<AirQuality::Feature, uint32_t>(
+            AirQuality::Feature::kFair, 
+            AirQuality::Feature::kModerate,
+            AirQuality::Feature::kVeryPoor,
+            AirQuality::Feature::kExtremelyPoor
+        )
+    );
+    
+    if (!s_airQualityInstance) {
+        ESP_LOGE(TAG, "Failed to allocate memory for Air Quality Instance");
+        return ESP_FAIL;
+    }
+    
+    CHIP_ERROR err = s_airQualityInstance->Init();
+    if (err != CHIP_NO_ERROR) {
+        ESP_LOGE(TAG, "Failed to initialize Air Quality Instance: %" CHIP_ERROR_FORMAT, err.Format());
+        delete s_airQualityInstance;
+        s_airQualityInstance = nullptr;
+        return ESP_FAIL;
+    }
+    
+    ESP_LOGI(TAG, "Air Quality Instance initialized successfully");
+    return ESP_OK;
+}
+
+/**
  * @brief Update Matter attributes with current sensor values
  * 
  * @param sensor_manager Pointer to the SensorManager instance
@@ -185,16 +233,17 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     }
 
     if (sgp && sgp->validateReading()) {
-        // Update VOC values
+        // Update VOC values using AirQuality Instance
         AirQuality::AirQualityEnum airQuality = map_voc_index(sgp->getVOCIndex());
-        esp_matter_attr_val_t air_quality_value = esp_matter_invalid(NULL);
-        air_quality_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_ENUM8;
-        air_quality_value.val.u8 = static_cast<uint8_t>(airQuality);
-        ESP_LOGI(TAG, "Updating Matter VOC: index %ld (air quality: %d)", sgp->getVOCIndex(), air_quality_value.val.u8);
-        esp_matter::attribute::update(voc_endpoint_id, 
-                                    AirQuality::Id, 
-                                    AirQuality::Attributes::AirQuality::Id, 
-                                    &air_quality_value);
+        ESP_LOGI(TAG, "Updating Matter VOC: index %ld (air quality: %d)", sgp->getVOCIndex(), static_cast<uint8_t>(airQuality));
+        
+        if (s_airQualityInstance != nullptr) {
+            // Lock the CHIP stack before calling UpdateAirQuality
+            chip::DeviceLayer::StackLock lock;
+            s_airQualityInstance->UpdateAirQuality(airQuality);
+        } else {
+            ESP_LOGE(TAG, "Air Quality Instance not initialized");
+        }
     }
 }
 
