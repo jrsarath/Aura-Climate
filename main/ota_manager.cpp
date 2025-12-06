@@ -65,6 +65,11 @@ esp_err_t OTAManager::beginUpdate(const char* url) {
         ESP_LOGI(TAG, "Update already in progress");
         return ESP_ERR_INVALID_STATE;
     }
+
+    if (!network_ready) {
+        ESP_LOGW(TAG, "Network not ready, skipping OTA attempt");
+        return ESP_ERR_INVALID_STATE;
+    }
     
     ESP_LOGI(TAG, "Beginning OTA update from %s", url);
     update_in_progress = true;
@@ -150,7 +155,11 @@ void OTAManager::startAutoCheckTask() {
             TickType_t last_check = xTaskGetTickCount();
             ESP_LOGI(TAG, "Is auto check enabled? %d", manager->auto_check_enabled);
             while (manager->auto_check_enabled) {
-                manager->checkForUpdates();
+                if (manager->network_ready) {
+                    manager->checkForUpdates();
+                } else {
+                    ESP_LOGW(TAG, "Skipping OTA check, network not ready");
+                }
                 vTaskDelayUntil(&last_check, pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS));
             }
             vTaskDelete(NULL);

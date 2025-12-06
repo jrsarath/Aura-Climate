@@ -40,6 +40,7 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
     switch (event->Type) {
         case chip::DeviceLayer::DeviceEventType::kInterfaceIpAddressChanged:
             ESP_LOGI(TAG, "Interface IP Address Changed");
+            OTAManager::getInstance().setNetworkReady(true);
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
@@ -134,9 +135,8 @@ extern "C" void app_main() {
         ESP_LOGE(TAG, "Failed to initialize OTA manager");
         return;
     }
-    
     // Enable automatic update checks
-    OTAManager::getInstance().enableAutoCheck(false);
+    OTAManager::getInstance().enableAutoCheck(true);
     ESP_LOGI(TAG, "OTA manager initialized, running version: %s", OTAManager::getInstance().getCurrentVersion());
 
     // Initialize sensor manager
@@ -225,6 +225,8 @@ extern "C" void app_main() {
     }
     // Initial Matter attribute update
     update_matter_with_sensor_values(sensor_manager);
+
+
 
     #if CONFIG_ENABLE_CHIP_SHELL
         esp_matter::console::diagnostics_register_commands();

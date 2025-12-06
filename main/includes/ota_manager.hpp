@@ -29,10 +29,12 @@ class OTAManager {
         void enableAutoCheck(bool enable);
         const char* getCurrentVersion() const { return current_version; }
         bool isUpdateInProgress() const { return update_in_progress; }
+        bool isNetworkReady() const { return network_ready; }
+        void setNetworkReady(bool ready) { network_ready = ready; }
         void setUpdateCallback(void (*callback)(int progress)) { progress_callback = callback; }
 
     private:
-        OTAManager() : update_in_progress(false), auto_check_enabled(false), 
+        OTAManager() : update_in_progress(false), auto_check_enabled(false), network_ready(false), 
                     progress_callback(nullptr), task_handle(nullptr) {}
         ~OTAManager() = default;
         OTAManager(const OTAManager&) = delete;
@@ -47,6 +49,7 @@ class OTAManager {
 
         bool update_in_progress;
         bool auto_check_enabled;
+        bool network_ready;
         char current_version[32];
         void (*progress_callback)(int progress);
         TaskHandle_t task_handle;

@@ -5,6 +5,7 @@
 #include <esp_log.h>
 #include <esp_system.h>
 #include <esp_timer.h>
+#include <driver/gpio.h>
 #include <dht.h>
 #include <sgp40.h>
 
@@ -25,6 +26,21 @@ DHTSensor::DHTSensor(gpio_num_t pin)
  */
 esp_err_t DHTSensor::initialize() {
     ESP_LOGI(TAG, "Initializing %s sensor on GPIO %d", sensor_name, gpio_pin);
+    
+    // Configure GPIO with pullup
+    gpio_config_t io_conf = {};
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_INPUT_OUTPUT_OD;  // Open-drain mode for DHT
+    io_conf.pin_bit_mask = (1ULL << gpio_pin);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    
+    esp_err_t ret = gpio_config(&io_conf);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to configure GPIO %d: %s", gpio_pin, esp_err_to_name(ret));
+        return ret;
+    }
+    
     initialized = true;
     return ESP_OK;
 }
