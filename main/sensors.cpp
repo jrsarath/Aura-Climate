@@ -226,11 +226,9 @@ esp_err_t ENS160Sensor::read() {
         return ret;
     }
 
-    if (dev_flag == ENS160_VALFLAG_WARMUP ||
-        dev_flag == ENS160_VALFLAG_INITIAL_STARTUP) {
+    if (dev_flag == ENS160_VALFLAG_WARMUP || dev_flag == ENS160_VALFLAG_INITIAL_STARTUP) {
         error_count++;
-        ESP_LOGW(TAG, "%s warming up (state=%u)",
-                 sensor_name, static_cast<unsigned>(dev_flag));
+        ESP_LOGW(TAG, "%s warming up (state=%u)", sensor_name, static_cast<unsigned>(dev_flag));
         return ESP_ERR_INVALID_STATE;
     }
 
