@@ -14,6 +14,6 @@
     "--query-driver=/Users/jrsarath/.espressif/tools/riscv32-esp-elf/esp-13.2.0_20240530/riscv32-esp-elf/bin/riscv32-esp-elf-gcc",
     "--compile-commands-dir=/Users/jrsarath/Documents/GitHub/Aura-Climate/build"
   ],
-  "idf.port": "/dev/tty.usbmodem11401",
+  "idf.port": "/dev/tty.usbmodem5AAF2850211",
   "idf.flashType": "UART"
 }

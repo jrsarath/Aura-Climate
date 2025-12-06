@@ -1,70 +1,4 @@
 dependencies:
-  esp-idf-lib/esp_idf_lib_helpers:
-    component_hash: a8049b1e609679fb54b2d57b0399dd29c4d1fda09a797edac9926f7810aa5703
-    dependencies: []
-    source:
-      registry_url: https://components.espressif.com
-      type: service
-    targets:
-    - esp32
-    - esp32c2
-    - esp32c3
-    - esp32c5
-    - esp32c6
-    - esp32c61
-    - esp32h2
-    - esp32p4
-    - esp32s2
-    - esp32s3
-    version: 1.3.10
-  esp-idf-lib/i2cdev:
-    component_hash: 11c08f9e1a7d346b5dd763196dc2567cf2209ae49042402c2c2d296624601c14
-    dependencies:
-    - name: esp-idf-lib/esp_idf_lib_helpers
-      registry_url: https://components.espressif.com
-      require: private
-      version: '*'
-    source:
-      registry_url: https://components.espressif.com
-      type: service
-    targets:
-    - esp32
-    - esp32c2
-    - esp32c3
-    - esp32c5
-    - esp32c6
-    - esp32c61
-    - esp32h2
-    - esp32p4
-    - esp32s2
-    - esp32s3
-    version: 2.0.8
-  esp-idf-lib/sht4x:
-    component_hash: 49dee93eedc30383b3ee81f32540ac56f8f52ef0f451bc13db3b6e1ee246e531
-    dependencies:
-    - name: esp-idf-lib/esp_idf_lib_helpers
-      registry_url: https://components.espressif.com
-      require: private
-      version: '*'
-    - name: esp-idf-lib/i2cdev
-      registry_url: https://components.espressif.com
-      require: private
-      version: '*'
-    source:
-      registry_url: https://components.espressif.com/
-      type: service
-    targets:
-    - esp32
-    - esp32c2
-    - esp32c3
-    - esp32c5
-    - esp32c6
-    - esp32c61
-    - esp32h2
-    - esp32p4
-    - esp32s2
-    - esp32s3
-    version: 1.0.7
   espressif/button:
     component_hash: 4ed25fcf354b48aa5e5680b9e7549e38d7738f9b613c94a2e39119c100db9c95
     dependencies:
@@ -372,6 +306,20 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 1.2.7
+  k0i05/esp_sht4x:
+    component_hash: 5a00f42596dd048c1a5db8e32411a1aa94f7d9aa0e30dd7bc1c19f3c036b840c
+    dependencies:
+    - name: idf
+      require: private
+      version: '>5.3.0'
+    - name: k0i05/esp_type_utils
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=1.0.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.2.7
   k0i05/esp_type_utils:
     component_hash: 95d8ec40268e045f7e264d8035f451e53844b4a2f6d5f112ece6645c5effd639
     dependencies:
@@ -383,10 +331,10 @@ dependencies:
       type: service
     version: 1.2.7
 direct_dependencies:
-- esp-idf-lib/sht4x
 - espressif/esp_bsp_devkit
 - espressif/esp_matter
 - k0i05/esp_ens160
-manifest_hash: 1e12b225b1ff51cf3f7175521583ecf5bac2a8e8da21f82099e3a259e02a8f57
+- k0i05/esp_sht4x
+manifest_hash: a7b9a289b9ac9d4564ed4e2d27beb14443448259da93b40ff21134aba00c4eb4
 target: esp32c6
 version: 2.0.0

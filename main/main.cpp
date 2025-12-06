@@ -185,7 +185,7 @@ extern "C" void app_main() {
     humidity_endpoint_id = endpoint::get_id(humidity_endpoint);
     ESP_LOGI(TAG, "Humidity endpoint created with ID %d", humidity_endpoint_id);
 
-    Configure Air Quality Sensor
+    // Configure Air Quality Sensor
     air_quality_sensor::config_t air_quality_config;
     endpoint_t *air_quality_endpoint = air_quality_sensor::create(node, &air_quality_config, ENDPOINT_FLAG_NONE, nullptr);
     if (!air_quality_endpoint) {
