@@ -12,7 +12,7 @@
 #define SENSOR_RETRY_DELAY_MS      1000
 
 // DHT Sensor Configuration
-#define DHT_TYPE                   DHT_TYPE_DHT11
+#define DHT_TYPE                   DHT_TYPE_AM2301
 #define DHT_ERROR_RETRY_COUNT      3
 #define DHT_MIN_TEMPERATURE        -40.0f
 #define DHT_MAX_TEMPERATURE        80.0f
