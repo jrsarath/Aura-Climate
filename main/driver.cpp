@@ -32,23 +32,14 @@ static gpio_num_t s_ident_gpio_drv = GPIO_NUM_NC;
 
 // Air Quality Instance for managing air quality attributes
 static AirQuality::Instance* s_airQualityInstance = nullptr;
-AirQuality::AirQualityEnum map_voc_index(uint16_t vocIndex) {
-    if (esp_timer_get_time() / 1000 - sgp40_start_time_ms < SGP40_WARMUP_TIME_MS) {
-        return AirQuality::AirQualityEnum::kUnknown;
-    }
-
-    if (vocIndex <= 50) {
-        return AirQuality::AirQualityEnum::kGood;
-    } else if (vocIndex <= 100) {
-        return AirQuality::AirQualityEnum::kFair;
-    } else if (vocIndex <= 150) {
-        return AirQuality::AirQualityEnum::kModerate;
-    } else if (vocIndex <= 200) {
-        return AirQuality::AirQualityEnum::kPoor;
-    } else if (vocIndex <= 300) {
-        return AirQuality::AirQualityEnum::kVeryPoor;
-    } else {
-        return AirQuality::AirQualityEnum::kExtremelyPoor;
+AirQuality::AirQualityEnum map_aqi_uba(uint8_t aqi) {
+    switch (aqi) {
+        case 1: return AirQuality::AirQualityEnum::kGood;
+        case 2: return AirQuality::AirQualityEnum::kFair;
+        case 3: return AirQuality::AirQualityEnum::kModerate;
+        case 4: return AirQuality::AirQualityEnum::kPoor;
+        case 5: return AirQuality::AirQualityEnum::kExtremelyPoor;
+        default: return AirQuality::AirQualityEnum::kUnknown;
     }
 }
 
@@ -204,12 +195,12 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         return;
     }
 
-    const DHTSensor* dht = sensor_manager->getDHTSensor();
-    const SGP40Sensor* sgp = sensor_manager->getSGP40Sensor();
+    const SHT40Sensor* sht = sensor_manager->getSHT40Sensor();
+    const ENS160Sensor* ens = sensor_manager->getENS160Sensor();
 
-    if (dht && dht->validateReading()) {
-        float temp = dht->getTemperature();
-        float humidity = dht->getHumidity();
+    if (sht && sht->validateReading()) {
+        float temp = sht->getTemperature();
+        float humidity = sht->getHumidity();
         
         // Update temperature values
         esp_matter_attr_val_t temperature_value = esp_matter_invalid(NULL);
@@ -232,10 +223,10 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
                                     &humidity_value);
     }
 
-    if (sgp && sgp->validateReading()) {
-        // Update VOC values using AirQuality Instance
-        AirQuality::AirQualityEnum airQuality = map_voc_index(sgp->getVOCIndex());
-        ESP_LOGI(TAG, "Updating Matter VOC: index %ld (air quality: %d)", sgp->getVOCIndex(), static_cast<uint8_t>(airQuality));
+    if (ens && ens->validateReading()) {
+        AirQuality::AirQualityEnum airQuality = map_aqi_uba(ens->getAQI());
+        ESP_LOGI(TAG, "Updating Matter AQI: %u (air quality: %d, TVOC: %u ppb, eCO2: %u ppm)",
+                ens->getAQI(), static_cast<uint8_t>(airQuality), ens->getTVOCppb(), ens->getECO2ppm());
         
         if (s_airQualityInstance != nullptr) {
             // Lock the CHIP stack before calling UpdateAirQuality

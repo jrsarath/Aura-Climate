@@ -6,7 +6,5 @@ dependencies:
     - if: target in [esp32c2]
   espressif/esp_matter: '*'
   esp_bsp_devkit: ^3
-  esp-idf-lib/sgp40: '*'
-  esp-idf-lib/dht: ^1.1.7
   esp-idf-lib/sht4x: ^1.0.7
   k0i05/esp_ens160: ^1.2.7

@@ -45,12 +45,12 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
             ESP_LOGI(TAG, "Commissioning complete");
-            // argb_stop_commissioning();
+            argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:
             ESP_LOGI(TAG, "Commissioning failed, fail safe timer expired");
-            // argb_stop_commissioning();
+            argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStarted:
@@ -59,18 +59,18 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStopped:
             ESP_LOGI(TAG, "Commissioning session stopped");
-            // argb_stop_commissioning();
+            argb_stop_commissioning();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:
             ESP_LOGI(TAG, "Commissioning window opened");
             // Start non-blocking commissioning glow on GPIO 8 (single pixel)
-            // argb_start_commissioning(8, 1);
+            argb_start_commissioning(CONFIG_GPIO_INDICATOR_LED, 1);
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:
             ESP_LOGI(TAG, "Commissioning window closed");
-            // argb_stop_commissioning();
+            argb_stop_commissioning();
             break;
 
         default:
@@ -165,7 +165,7 @@ extern "C" void app_main() {
 
     // Configure Temperature Sensor
     temperature_sensor::config_t temperature_config;
-    temperature_config.temperature_measurement.measured_value = sensor_manager->getDHTSensor()->getTemperature();
+    temperature_config.temperature_measurement.measured_value = sensor_manager->getSHT40Sensor()->getTemperature();
     endpoint_t *temperature_endpoint = temperature_sensor::create(node, &temperature_config, ENDPOINT_FLAG_NONE, nullptr);
     if (!temperature_endpoint) {
         ESP_LOGE(TAG, "Failed to create temperature endpoint");
@@ -176,7 +176,7 @@ extern "C" void app_main() {
 
     // Configure Humidity Sensor
     humidity_sensor::config_t humidity_config;
-    humidity_config.relative_humidity_measurement.measured_value = sensor_manager->getDHTSensor()->getHumidity();
+    humidity_config.relative_humidity_measurement.measured_value = sensor_manager->getSHT40Sensor()->getHumidity();
     endpoint_t *humidity_endpoint = humidity_sensor::create(node, &humidity_config, ENDPOINT_FLAG_NONE, nullptr);
     if (!humidity_endpoint) {
         ESP_LOGE(TAG, "Failed to create humidity endpoint");
@@ -185,7 +185,7 @@ extern "C" void app_main() {
     humidity_endpoint_id = endpoint::get_id(humidity_endpoint);
     ESP_LOGI(TAG, "Humidity endpoint created with ID %d", humidity_endpoint_id);
 
-    // Configure Air Quality Sensor
+    Configure Air Quality Sensor
     air_quality_sensor::config_t air_quality_config;
     endpoint_t *air_quality_endpoint = air_quality_sensor::create(node, &air_quality_config, ENDPOINT_FLAG_NONE, nullptr);
     if (!air_quality_endpoint) {

@@ -3,11 +3,12 @@
 #include <freertos/task.h>
 #include <esp_err.h>
 #include <esp_log.h>
+#include <esp_check.h>
 #include <esp_system.h>
 #include <esp_timer.h>
 #include <driver/gpio.h>
-#include <dht.h>
-#include <sgp40.h>
+#include <i2cdev.h>
+#include <sht4x.h>
 
 #include "includes/sensors.hpp"
 #include "includes/variables.hpp"
@@ -15,42 +16,45 @@
 
 static const char *TAG = "sensors";
 
-// DHT Sensor Implementation
-DHTSensor::DHTSensor(gpio_num_t pin) 
-    : SensorBase("DHT22"), gpio_pin(pin), temperature(0.0f), humidity(0.0f) {}
+// SHT40 Sensor Implementation
+SHT40Sensor::SHT40Sensor()
+    : SensorBase("SHT40"), temperature(0.0f), humidity(0.0f) {
+    memset(&sht_dev, 0, sizeof(sht_dev));
+}
 
 /**
- * @brief Initialize the DHT sensor.
- * 
- * @return esp_err_t 
+ * @brief Initialize the SHT40 sensor.
+ *
+ * @return esp_err_t
  */
-esp_err_t DHTSensor::initialize() {
-    ESP_LOGI(TAG, "Initializing %s sensor on GPIO %d", sensor_name, gpio_pin);
-    
-    // Configure GPIO with pullup
-    gpio_config_t io_conf = {};
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    io_conf.mode = GPIO_MODE_INPUT_OUTPUT_OD;  // Open-drain mode for DHT
-    io_conf.pin_bit_mask = (1ULL << gpio_pin);
-    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
-    
-    esp_err_t ret = gpio_config(&io_conf);
+esp_err_t SHT40Sensor::initialize() {
+    ESP_LOGI(TAG, "Initializing %s sensor on I2C", sensor_name);
+    esp_err_t ret = sht4x_init_desc(&sht_dev, (i2c_port_t)0, (gpio_num_t)CONFIG_GPIO_I2C_MASTER_SDA, (gpio_num_t)CONFIG_GPIO_I2C_MASTER_SCL);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to configure GPIO %d: %s", gpio_pin, esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to initialize SHT40 descriptor: %s", esp_err_to_name(ret));
         return ret;
     }
-    
+
+    ret = sht4x_init(&sht_dev);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize SHT40: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    // Apply configured heater and repeatability modes
+    sht_dev.heater = SHT4X_HEATER_MODE;
+    sht_dev.repeatability = SHT4X_REPEATABILITY;
+
     initialized = true;
     return ESP_OK;
 }
 
 /**
- * @brief Read data from the DHT sensor.
- * 
- * @return esp_err_t 
+ * @brief Read data from the SHT40 sensor.
+ *
+ * @return esp_err_t
  */
-esp_err_t DHTSensor::read() {
+esp_err_t SHT40Sensor::read() {
     if (!initialized) {
         ESP_LOGE(TAG, "%s sensor not initialized", sensor_name);
         return ESP_ERR_INVALID_STATE;
@@ -60,11 +64,11 @@ esp_err_t DHTSensor::read() {
     float temp_reading = 0.0f;
     float humid_reading = 0.0f;
 
-    for (int i = 0; i < DHT_ERROR_RETRY_COUNT; i++) {
-        ret = dht_read_float_data(DHT_TYPE, gpio_pin, &humid_reading, &temp_reading);
+    for (int i = 0; i < SHT4X_ERROR_RETRY_COUNT; i++) {
+        ret = sht4x_measure(&sht_dev, &temp_reading, &humid_reading);
         if (ret == ESP_OK) {
-            if (temp_reading >= DHT_MIN_TEMPERATURE && temp_reading <= DHT_MAX_TEMPERATURE &&
-                humid_reading >= DHT_MIN_HUMIDITY && humid_reading <= DHT_MAX_HUMIDITY) {
+            if (temp_reading >= SHT4X_MIN_TEMPERATURE && temp_reading <= SHT4X_MAX_TEMPERATURE &&
+                humid_reading >= SHT4X_MIN_HUMIDITY && humid_reading <= SHT4X_MAX_HUMIDITY) {
                 temperature = temp_reading;
                 humidity = humid_reading;
                 error_count = 0;
@@ -76,124 +80,186 @@ esp_err_t DHTSensor::read() {
         vTaskDelay(pdMS_TO_TICKS(SENSOR_RETRY_DELAY_MS));
     }
 
-    ESP_LOGE(TAG, "%s reading failed after %d attempts", sensor_name, DHT_ERROR_RETRY_COUNT);
+    ESP_LOGE(TAG, "%s reading failed after %d attempts", sensor_name, SHT4X_ERROR_RETRY_COUNT);
     return ESP_FAIL;
 }
 
 /**
- * @brief Reset the DHT sensor readings and error count.
- * 
+ * @brief Reset the SHT40 sensor readings and error count.
+ *
  */
-void DHTSensor::reset() {
+void SHT40Sensor::reset() {
     temperature = 0.0f;
     humidity = 0.0f;
     error_count = 0;
 }
 
-/** 
- * @brief Validate the DHT sensor readings.
- * 
+/**
+ * @brief Validate the SHT40 sensor readings.
+ *
  */
-bool DHTSensor::validateReading() const {
-    return temperature >= DHT_MIN_TEMPERATURE && temperature <= DHT_MAX_TEMPERATURE &&
-           humidity >= DHT_MIN_HUMIDITY && humidity <= DHT_MAX_HUMIDITY;
+bool SHT40Sensor::validateReading() const {
+    return temperature >= SHT4X_MIN_TEMPERATURE && temperature <= SHT4X_MAX_TEMPERATURE &&
+           humidity >= SHT4X_MIN_HUMIDITY && humidity <= SHT4X_MAX_HUMIDITY;
 }
 
-// SGP40 Sensor Implementation
-SGP40Sensor::SGP40Sensor(uint8_t addr) 
-    : SensorBase("SGP40"), i2c_addr(addr), voc_index(0) {
-    memset(&sgp_dev, 0, sizeof(sgp_dev));
+// ENS160 Sensor Implementation
+// Register map helpers
+static constexpr uint8_t ENS160_REG_OPMODE      = 0x10;
+static constexpr uint8_t ENS160_REG_COMMAND     = 0x12;
+static constexpr uint8_t ENS160_REG_STATUS      = 0x20;
+static constexpr uint8_t ENS160_REG_DATA_AQI    = 0x21;
+static constexpr uint8_t ENS160_REG_DATA_TVOC   = 0x22;
+static constexpr uint8_t ENS160_REG_DATA_ECO2   = 0x24;
+
+static constexpr uint8_t ENS160_OPMODE_RESET    = 0xF0;
+static constexpr uint8_t ENS160_OPMODE_IDLE     = 0x01;
+static constexpr uint8_t ENS160_OPMODE_STANDARD = 0x02;
+
+static constexpr uint8_t ENS160_CMD_NORMAL      = 0x00;
+static constexpr uint8_t ENS160_CMD_CLEAR_GPR   = 0xCC;
+
+ENS160Sensor::ENS160Sensor()
+    : SensorBase("ENS160"), aqi(0), tvoc_ppb(0), eco2_ppm(0) {
+    memset(&dev, 0, sizeof(dev));
+}
+
+esp_err_t ENS160Sensor::write_reg(uint8_t reg, uint8_t value) {
+    return i2c_dev_write_reg(&dev, reg, &value, 1);
+}
+
+esp_err_t ENS160Sensor::read_reg(uint8_t reg, uint8_t* value) {
+    return i2c_dev_read_reg(&dev, reg, value, 1);
+}
+
+esp_err_t ENS160Sensor::read_word(uint8_t reg, uint16_t* value) {
+    uint8_t buf[2] = {0};
+    esp_err_t ret = i2c_dev_read_reg(&dev, reg, buf, 2);
+    if (ret == ESP_OK) {
+        *value = (uint16_t)(buf[0] | ((uint16_t)buf[1] << 8));
+    }
+    return ret;
+}
+
+esp_err_t ENS160Sensor::wait_data_ready(uint32_t timeout_ms) {
+    const uint64_t start = esp_timer_get_time();
+    while (true) {
+        uint8_t status = 0;
+        esp_err_t ret = read_reg(ENS160_REG_STATUS, &status);
+        if (ret != ESP_OK) {
+            return ret;
+        }
+        if (status & BIT(1)) { // new_data bit
+            return ESP_OK;
+        }
+        if ((esp_timer_get_time() - start) / 1000 >= timeout_ms) {
+            return ESP_ERR_TIMEOUT;
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
 }
 
 /**
- * @brief Initialize the SGP40 sensor.
- * 
- * @return esp_err_t 
+ * @brief Initialize the ENS160 sensor.
+ *
+ * @return esp_err_t
  */
-esp_err_t SGP40Sensor::initialize() {
-    ESP_LOGI(TAG, "Initializing %s sensor at address 0x%x", sensor_name, i2c_addr);
-    
-    // Initialize I2C
-    esp_err_t ret = i2cdev_init();
+esp_err_t ENS160Sensor::initialize() {
+    ESP_LOGI(TAG, "Initializing %s sensor on I2C", sensor_name);
+    esp_err_t ret = ESP_OK;
+    dev.port = I2C_NUM_0;
+    dev.addr = ENS160_I2C_ADDR;
+    dev.cfg.sda_io_num = (gpio_num_t)CONFIG_GPIO_I2C_MASTER_SDA;
+    dev.cfg.scl_io_num = (gpio_num_t)CONFIG_GPIO_I2C_MASTER_SCL;
+#if HELPER_TARGET_IS_ESP32
+    dev.cfg.master.clk_speed = 100000; // 100kHz
+#endif
+    ret = i2c_dev_create_mutex(&dev);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize I2C");
-        return ret;
-    }
-    
-    // Initialize SGP40
-    ret = sgp40_init_desc(&sgp_dev, (i2c_port_t)0, (gpio_num_t)CONFIG_GPIO_I2C_MASTER_SDA, (gpio_num_t)CONFIG_GPIO_I2C_MASTER_SCL);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize SGP40 descriptor");
-        return ret;
-    }
-
-    ret = sgp40_init(&sgp_dev);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize SGP40");
+        ESP_LOGE(TAG, "Failed to create I2C mutex for ENS160: %s", esp_err_to_name(ret));
         return ret;
     }
 
-    ESP_LOGI(TAG, "SGP40 initialized. Serial: 0x%04x%04x%04x", sgp_dev.serial[0], sgp_dev.serial[1], sgp_dev.serial[2]);
+    // Reset then set to standard mode
+    ESP_RETURN_ON_ERROR(write_reg(ENS160_REG_OPMODE, ENS160_OPMODE_RESET), TAG, "ENS160 reset failed");
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    ESP_RETURN_ON_ERROR(write_reg(ENS160_REG_OPMODE, ENS160_OPMODE_IDLE), TAG, "ENS160 idle set failed");
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    ESP_RETURN_ON_ERROR(write_reg(ENS160_REG_COMMAND, ENS160_CMD_NORMAL), TAG, "ENS160 command normal failed");
+    ESP_RETURN_ON_ERROR(write_reg(ENS160_REG_COMMAND, ENS160_CMD_CLEAR_GPR), TAG, "ENS160 clear GPR failed");
+    vTaskDelay(pdMS_TO_TICKS(10));
+    ESP_RETURN_ON_ERROR(write_reg(ENS160_REG_COMMAND, ENS160_CMD_NORMAL), TAG, "ENS160 command normal (post-clear) failed");
+    vTaskDelay(pdMS_TO_TICKS(5));
+
+    ESP_RETURN_ON_ERROR(write_reg(ENS160_REG_OPMODE, ENS160_OPMODE_STANDARD), TAG, "ENS160 standard mode failed");
+    vTaskDelay(pdMS_TO_TICKS(25));
+
     initialized = true;
-    
-    // Record start time for warmup period
-    sgp40_start_time_ms = esp_timer_get_time() / 1000;
-    ESP_LOGI(TAG, "SGP40 warmup period started");
-    
     return ESP_OK;
 }
 
 /**
- * @brief Read data from the SGP40 sensor.
- * 
- * @return esp_err_t 
+ * @brief Read data from the ENS160 sensor.
+ *
+ * @return esp_err_t
  */
-esp_err_t SGP40Sensor::read() {
+esp_err_t ENS160Sensor::read() {
     if (!initialized) {
         ESP_LOGE(TAG, "%s sensor not initialized", sensor_name);
         return ESP_ERR_INVALID_STATE;
     }
 
-    esp_err_t ret = ESP_OK;
-    int32_t reading = 0;
-
-    for (int i = 0; i < SGP40_ERROR_RETRY_COUNT; i++) {
-        ret = sgp40_measure_voc(&sgp_dev, 0.0, 0.0, &reading);
-        if (ret == ESP_OK) {
-            if (reading >= SGP40_MIN_VOC_INDEX && reading <= SGP40_MAX_VOC_INDEX) {
-                voc_index = reading;
-                error_count = 0;
-                return ESP_OK;
-            }
-        }
+    esp_err_t ret = wait_data_ready(ENS160_DATA_POLL_TIMEOUT_MS);
+    if (ret != ESP_OK) {
         error_count++;
-        ESP_LOGW(TAG, "%s reading attempt %d failed", sensor_name, i + 1);
-        vTaskDelay(pdMS_TO_TICKS(SENSOR_RETRY_DELAY_MS));
+        ESP_LOGW(TAG, "%s data not ready or error: %s", sensor_name, esp_err_to_name(ret));
+        return ret;
     }
 
-    ESP_LOGE(TAG, "%s reading failed after %d attempts", sensor_name, SGP40_ERROR_RETRY_COUNT);
-    return ESP_FAIL;
+    uint8_t aqi_read = 0;
+    uint16_t tvoc_read = 0;
+    uint16_t eco2_read = 0;
+
+    ret = read_reg(ENS160_REG_DATA_AQI, &aqi_read);
+    if (ret != ESP_OK) goto read_fail;
+    ret = read_word(ENS160_REG_DATA_TVOC, &tvoc_read);
+    if (ret != ESP_OK) goto read_fail;
+    ret = read_word(ENS160_REG_DATA_ECO2, &eco2_read);
+    if (ret != ESP_OK) goto read_fail;
+
+    if (aqi_read >= ENS160_MIN_AQI && aqi_read <= ENS160_MAX_AQI &&
+        tvoc_read <= ENS160_MAX_TVOC_PPB && tvoc_read >= ENS160_MIN_TVOC_PPB &&
+        eco2_read <= ENS160_MAX_ECO2_PPM && eco2_read >= ENS160_MIN_ECO2_PPM) {
+        aqi = aqi_read;
+        tvoc_ppb = tvoc_read;
+        eco2_ppm = eco2_read;
+        error_count = 0;
+        return ESP_OK;
+    }
+
+read_fail:
+    error_count++;
+    ESP_LOGW(TAG, "%s reading failed (%s)", sensor_name, esp_err_to_name(ret));
+    return ret == ESP_OK ? ESP_FAIL : ret;
 }
 
-/**
- * @brief Reset the SGP40 sensor readings and error count.
- * 
- */
-void SGP40Sensor::reset() {
-    voc_index = 0;
+void ENS160Sensor::reset() {
+    aqi = 0;
+    tvoc_ppb = 0;
+    eco2_ppm = 0;
     error_count = 0;
 }
 
-/** 
- * @brief Validate the SGP40 sensor reading.
- * 
- */
-bool SGP40Sensor::validateReading() const {
-    return voc_index >= SGP40_MIN_VOC_INDEX && voc_index <= SGP40_MAX_VOC_INDEX;
+bool ENS160Sensor::validateReading() const {
+    return aqi >= ENS160_MIN_AQI && aqi <= ENS160_MAX_AQI &&
+           tvoc_ppb >= ENS160_MIN_TVOC_PPB && tvoc_ppb <= ENS160_MAX_TVOC_PPB &&
+           eco2_ppm >= ENS160_MIN_ECO2_PPM && eco2_ppm <= ENS160_MAX_ECO2_PPM;
 }
 
 // Sensor Manager Implementation
-SensorManager::SensorManager() : dht_sensor(nullptr), sgp_sensor(nullptr), running(false), task_handle(nullptr) {}
+SensorManager::SensorManager() : sht_sensor(nullptr), ens_sensor(nullptr), running(false), task_handle(nullptr) {}
 
 /** 
  * @brief Destructor to clean up sensors and stop readings.
@@ -201,8 +267,8 @@ SensorManager::SensorManager() : dht_sensor(nullptr), sgp_sensor(nullptr), runni
  */
 SensorManager::~SensorManager() {
     stopReadings();
-    delete dht_sensor;
-    delete sgp_sensor;
+    delete sht_sensor;
+    delete ens_sensor;
 }
 
 /** 
@@ -210,18 +276,26 @@ SensorManager::~SensorManager() {
  * 
  */
 esp_err_t SensorManager::initialize() {
-    dht_sensor = new DHTSensor((gpio_num_t)CONFIG_GPIO_DHT_PIN);
-    sgp_sensor = new SGP40Sensor();
-
-    esp_err_t ret = dht_sensor->initialize();
+    // Initialize I2C bus once for all sensors
+    ESP_LOGI(TAG, "Initializing I2C bus on SDA=%d, SCL=%d", CONFIG_GPIO_I2C_MASTER_SDA, CONFIG_GPIO_I2C_MASTER_SCL);
+    esp_err_t ret = i2cdev_init();
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize DHT sensor");
+        ESP_LOGE(TAG, "Failed to initialize I2C bus: %s", esp_err_to_name(ret));
         return ret;
     }
 
-    ret = sgp_sensor->initialize();
+    sht_sensor = new SHT40Sensor();
+    // ens_sensor = new ENS160Sensor();
+
+    ret = sht_sensor->initialize();
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize SGP40 sensor");
+        ESP_LOGE(TAG, "Failed to initialize SHT40 sensor");
+        return ret;
+    }
+
+    ret = ens_sensor->initialize();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize ENS160 sensor");
         return ret;
     }
 
@@ -238,21 +312,24 @@ void SensorManager::readingTask(void* parameters) {
     
     while (manager->running) {
         uint32_t current_time = esp_timer_get_time() / 1000;  // Convert to ms
-        esp_err_t dht_ret = manager->dht_sensor->read();
-        esp_err_t sgp_ret = manager->sgp_sensor->read();
+        esp_err_t sht_ret = manager->sht_sensor->read();
+        esp_err_t ens_ret = manager->ens_sensor->read();
 
-        if (dht_ret == ESP_OK && manager->dht_sensor->validateReading()) {
+        if (sht_ret == ESP_OK && manager->sht_sensor->validateReading()) {
             ESP_LOGI(TAG, "Temperature: %.1f°C, Humidity: %.1f%%", 
-                    manager->dht_sensor->getTemperature(),
-                    manager->dht_sensor->getHumidity());
+                    manager->sht_sensor->getTemperature(),
+                    manager->sht_sensor->getHumidity());
         } else {
-            ESP_LOGW(TAG, "Failed to read DHT sensor or invalid reading");
+            ESP_LOGW(TAG, "Failed to read SHT40 sensor or invalid reading");
         }
 
-        if (sgp_ret == ESP_OK && manager->sgp_sensor->validateReading()) {
-            ESP_LOGI(TAG, "VOC Index: %ld", manager->sgp_sensor->getVOCIndex());
+        if (ens_ret == ESP_OK && manager->ens_sensor->validateReading()) {
+            ESP_LOGI(TAG, "AQI: %u, TVOC: %uppb, eCO2: %uppm",
+                    manager->ens_sensor->getAQI(),
+                    manager->ens_sensor->getTVOCppb(),
+                    manager->ens_sensor->getECO2ppm());
         } else {
-            ESP_LOGW(TAG, "Failed to read SGP sensor or invalid reading");
+            ESP_LOGW(TAG, "Failed to read ENS160 sensor or invalid reading");
         }
 
         // Update Matter attributes only at the specified interval

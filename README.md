@@ -2,8 +2,8 @@
 
 # Aura Climate
 A simple firmware using the esp-matter SDK to develop a Matter-enabled device with the following features:
-- **Temperature & Humidity:** DHT22 sensor
-- **Air Quality:** SGP40 sensor
+- **Temperature & Humidity:** SHT40 sensor (I2C)
+- **Air Quality:** ENS160 sensor (I2C)
 
 The firmware provides a flexible design to easily enable or disable sensors and features based on your requirements.
 
@@ -13,7 +13,7 @@ Requirements
 - esp-matter installed and configured
 Steps
 - Clone the repository
-- Set GPIO pins for DHT22 and I2C (SGP40) sensors using Kconfig
+- Set I2C pins for SHT40 and ENS160 sensors using Kconfig
 - Build and flash the firmware
 
 
@@ -21,7 +21,7 @@ Steps
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
 
 ## Demo device
-This project includes a custom PCB integrating a DHT22/AM2302 from ASAIR and SGP40 from Adafruit, with a Hi-Link converter to run the device from AC. The board is powered by an ESP32 Devkit.
+This project includes a custom PCB integrating a Sensirion SHT40 and an ENS160 from Adafruit, with a Hi-Link converter to run the device from AC. The board is powered by an ESP32 Devkit.
 - [PCB Schema](https://365.altium.com/files/E2252F43-3197-4BE0-AAA4-C608606C2910)
 - [Demo Device](assets/device.jpg)
 

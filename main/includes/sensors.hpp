@@ -1,7 +1,8 @@
 #pragma once
 
 #include <esp_err.h>
-#include <sgp40.h>
+#include <i2cdev.h>
+#include <sht4x.h>
 #include <driver/gpio.h>
 #include "config.hpp"
 
@@ -28,18 +29,18 @@ class SensorBase {
 };
 
 /**
- * @brief DHT sensor class for temperature and humidity measurements.
+ * @brief SHT40 sensor class for temperature and humidity measurements.
  * 
  */
-class DHTSensor : public SensorBase {
+class SHT40Sensor : public SensorBase {
     private:
-        gpio_num_t gpio_pin;
         float temperature;
         float humidity;
+        sht4x_t sht_dev;
 
     public:
-        explicit DHTSensor(gpio_num_t pin);
-        ~DHTSensor() override = default;
+        SHT40Sensor();
+        ~SHT40Sensor() override = default;
 
         esp_err_t initialize() override;
         esp_err_t read() override;
@@ -51,24 +52,32 @@ class DHTSensor : public SensorBase {
 };
 
 /**
- * @brief SGP40 sensor class for VOC index measurements.
+ * @brief ENS160 sensor class for air quality measurements.
  * 
  */
-class SGP40Sensor : public SensorBase {
+class ENS160Sensor : public SensorBase {
     private:
-        uint8_t i2c_addr;
-        int32_t voc_index;
-        sgp40_t sgp_dev;
+        i2c_dev_t dev;
+        uint8_t aqi;
+        uint16_t tvoc_ppb;
+        uint16_t eco2_ppm;
+
+        esp_err_t write_reg(uint8_t reg, uint8_t value);
+        esp_err_t read_reg(uint8_t reg, uint8_t* value);
+        esp_err_t read_word(uint8_t reg, uint16_t* value);
+        esp_err_t wait_data_ready(uint32_t timeout_ms);
 
     public:
-        explicit SGP40Sensor(uint8_t addr = SGP40_I2C_ADDR);
-        ~SGP40Sensor() override = default;
+        ENS160Sensor();
+        ~ENS160Sensor() override = default;
 
         esp_err_t initialize() override;
         esp_err_t read() override;
         void reset() override;
 
-        int32_t getVOCIndex() const { return voc_index; }
+        uint8_t getAQI() const { return aqi; }
+        uint16_t getTVOCppb() const { return tvoc_ppb; }
+        uint16_t getECO2ppm() const { return eco2_ppm; }
         bool validateReading() const;
 };
 
@@ -78,8 +87,8 @@ class SGP40Sensor : public SensorBase {
  */
 class SensorManager {
     private:
-        DHTSensor* dht_sensor;
-        SGP40Sensor* sgp_sensor;
+        SHT40Sensor* sht_sensor;
+        ENS160Sensor* ens_sensor;
         bool running;
         TaskHandle_t task_handle;
 
@@ -93,6 +102,6 @@ class SensorManager {
         esp_err_t startReadings();
         void stopReadings();
         
-        const DHTSensor* getDHTSensor() const { return dht_sensor; }
-        const SGP40Sensor* getSGP40Sensor() const { return sgp_sensor; }
+        const SHT40Sensor* getSHT40Sensor() const { return sht_sensor; }
+        const ENS160Sensor* getENS160Sensor() const { return ens_sensor; }
 };

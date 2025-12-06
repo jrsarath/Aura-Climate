@@ -11,19 +11,25 @@
 #define SENSOR_MAX_RETRIES         3
 #define SENSOR_RETRY_DELAY_MS      1000
 
-// DHT Sensor Configuration
-#define DHT_TYPE                   DHT_TYPE_AM2301
-#define DHT_ERROR_RETRY_COUNT      3
-#define DHT_MIN_TEMPERATURE        -40.0f
-#define DHT_MAX_TEMPERATURE        80.0f
-#define DHT_MIN_HUMIDITY           0.0f
-#define DHT_MAX_HUMIDITY           100.0f
+// SHT4x Sensor Configuration
+#define SHT4X_ERROR_RETRY_COUNT    3
+#define SHT4X_MIN_TEMPERATURE      -40.0f
+#define SHT4X_MAX_TEMPERATURE      125.0f
+#define SHT4X_MIN_HUMIDITY         0.0f
+#define SHT4X_MAX_HUMIDITY         100.0f
+#define SHT4X_HEATER_MODE          SHT4X_HEATER_OFF
+#define SHT4X_REPEATABILITY        SHT4X_HIGH
 
-// SGP40 Sensor Configuration
-#define SGP40_I2C_ADDR             0x59
-#define SGP40_ERROR_RETRY_COUNT    3
-#define SGP40_MIN_VOC_INDEX        0
-#define SGP40_MAX_VOC_INDEX        500
+// ENS160 Sensor Configuration
+#define ENS160_I2C_ADDR            0x53
+#define ENS160_ERROR_RETRY_COUNT   3
+#define ENS160_MIN_AQI             1
+#define ENS160_MAX_AQI             5
+#define ENS160_MIN_TVOC_PPB        0
+#define ENS160_MAX_TVOC_PPB        65000
+#define ENS160_MIN_ECO2_PPM        400
+#define ENS160_MAX_ECO2_PPM        65000
+#define ENS160_DATA_POLL_TIMEOUT_MS 1500
 
 // OTA Configuration
 #define OTA_TASK_STACK_SIZE        8192
