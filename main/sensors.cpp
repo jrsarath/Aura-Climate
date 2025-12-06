@@ -194,7 +194,7 @@ SensorManager::~SensorManager() {
  * 
  */
 esp_err_t SensorManager::initialize() {
-    dht_sensor = new DHTSensor((gpio_num_t)CONFIG_GPIO_DHT22_PIN);
+    dht_sensor = new DHTSensor((gpio_num_t)CONFIG_GPIO_DHT_PIN);
     sgp_sensor = new SGP40Sensor();
 
     esp_err_t ret = dht_sensor->initialize();

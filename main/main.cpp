@@ -136,7 +136,7 @@ extern "C" void app_main() {
     }
     
     // Enable automatic update checks
-    OTAManager::getInstance().enableAutoCheck(true);
+    OTAManager::getInstance().enableAutoCheck(false);
     ESP_LOGI(TAG, "OTA manager initialized, running version: %s", OTAManager::getInstance().getCurrentVersion());
 
     // Initialize sensor manager
@@ -209,13 +209,6 @@ extern "C" void app_main() {
     err = esp_matter::start(app_event_cb);
     abort_on_failure(err == ESP_OK, TAG, "Failed to start Matter, err:%d", err);
 
-    // Start sensor readings
-    err = sensor_manager->startReadings();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to start sensor readings");
-        return;
-    }
-
     // Initialize Air Quality Instance for attribute management
     // This is required because the AirQuality attribute is managed internally by CHIP
     err = driver_air_quality_init(air_quality_endpoint_id);
@@ -224,6 +217,12 @@ extern "C" void app_main() {
         return;
     }
 
+    // Start sensor readings
+    err = sensor_manager->startReadings();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start sensor readings");
+        return;
+    }
     // Initial Matter attribute update
     update_matter_with_sensor_values(sensor_manager);
 
