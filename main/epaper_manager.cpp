@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <Digital7.h>
 #include "epaper_manager.hpp"
 #include "goodisplay/gdeq037T31.h"
 
@@ -31,6 +32,22 @@ esp_err_t epaper_init(void) {
     ESP_LOGI(TAG, "Display rotation: %d\n", display.getRotation());
 
     display.fast_mode = true;
+
+    display.setFont(&digital_70pt7b);
+    display.fillScreen(EPD_WHITE);
+    display.setTextColor(EPD_BLACK);
+    display.setTextSize(3);
+    
+    // Center the text on screen
+    int16_t text_width = 10 * 18;
+    int16_t text_height = 24;
+    int16_t x = (display.width() - text_width) / 2;
+    int16_t y = (display.height() - text_height) / 2;
+    
+    display.setCursor(x, y);
+    display.print("48 Studios");
+    display.update();
+
     display.update();
 
     epd_initialized = true;
@@ -106,10 +123,18 @@ void epaper_test_display(void) {
     
     ESP_LOGI(TAG, "Testing e-paper display - displaying test pattern");
     
-    display.fillScreen(EPD_BLACK);
-    display.setTextColor(EPD_WHITE);
-    display.setTextSize(2);
-    display.print("Hello CalEPD!");
+    display.fillScreen(EPD_WHITE);
+    display.setTextColor(EPD_BLACK);
+    display.setTextSize(3);
+    
+    // Center the text on screen
+    int16_t text_width = 10 * 18;  
+    int16_t text_height = 24;
+    int16_t x = (display.width() - text_width) / 2;
+    int16_t y = (display.height() - text_height) / 2;
+    
+    display.setCursor(x, y);
+    display.print("48 Studios");
     display.update();
     
     ESP_LOGI(TAG, "Display test complete");
