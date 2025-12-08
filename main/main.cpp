@@ -146,8 +146,7 @@ extern "C" void app_main() {
         ESP_LOGE(TAG, "Failed to initialize e-paper display");
         // Continue without e-paper display
     } else {
-        // Test display with pattern
-        epaper_test_display();
+        epaper_display_splash();
     }
     
     // Initialize sensor manager
