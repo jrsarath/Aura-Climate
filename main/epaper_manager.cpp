@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include "goodisplay/gdeq037T31.h"
 #include "epaper_manager.hpp"
-#include "FreeSans9pt7b.h"
 #include "digital_79pt7b.h"
 
 
