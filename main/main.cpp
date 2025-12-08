@@ -16,18 +16,19 @@
 #include <app/server/Server.h>
 #include <app/server/CommissioningWindowManager.h>
 
-#include "includes/config.hpp"
-#include "includes/variables.hpp"
-#include "includes/driver.hpp"
-#include "includes/ota_manager.hpp"
-#include "includes/utils.hpp"
+#include "config.hpp"
+#include "variables.hpp"
+#include "driver.hpp"
+#include "ota_manager.hpp"
+#include "utils.hpp"
+#include "epaper_manager.hpp"
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
 using namespace esp_matter::endpoint;
 using namespace chip::app::Clusters;
 
-static const char *TAG = "matter";
+static const char *TAG = "AURA";
 static SensorManager* sensor_manager = nullptr;
 
 /**
@@ -223,8 +224,19 @@ extern "C" void app_main() {
         ESP_LOGE(TAG, "Failed to start sensor readings");
         return;
     }
+    
     // Initial Matter attribute update
     update_matter_with_sensor_values(sensor_manager);
+    
+    // Initialize e-paper display
+    err = epaper_init();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize e-paper display");
+        // Continue without e-paper display
+    } else {
+        // Initial display update
+        epaper_update_display(sensor_manager);
+    }
 
 
 

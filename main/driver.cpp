@@ -14,16 +14,17 @@
 #include <lib/support/BitMask.h>
 #include <platform/CHIPDeviceLayer.h>
 
-#include "includes/config.hpp"
-#include "includes/variables.hpp"
-#include "includes/driver.hpp"
-#include "includes/sensors.hpp"
+#include "config.hpp"
+#include "variables.hpp"
+#include "driver.hpp"
+#include "sensors.hpp"
+#include "epaper_manager.hpp"
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
 using namespace chip::app::Clusters;
 
-static const char *TAG = "driver";
+static const char *TAG = "DRIVER";
 // Identification pulse state (driver-side)
 static TaskHandle_t s_ident_task_drv = NULL;
 static volatile bool s_ident_running_drv = false;
@@ -190,6 +191,9 @@ esp_err_t driver_air_quality_init(uint16_t endpoint_id) {
  * @param sensor_manager Pointer to the SensorManager instance
  */
 void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
+    static uint32_t update_count = 0;
+    static const uint32_t EPAPER_UPDATE_INTERVAL = CONFIG_EINK_UPDATE_INTERVAL;
+    
     if (!sensor_manager) {
         ESP_LOGE(TAG, "Invalid sensor manager pointer");
         return;
@@ -198,9 +202,15 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     const SHT40Sensor* sht = sensor_manager->getSHT40Sensor();
     const ENS160Sensor* ens = sensor_manager->getENS160Sensor();
 
+    float temp = 0.0f;
+    float humidity = 0.0f;
+    uint16_t co2 = 0;
+    uint16_t tvoc = 0;
+    uint16_t aqi = 0;
+
     if (sht && sht->validateReading()) {
-        float temp = sht->getTemperature();
-        float humidity = sht->getHumidity();
+        temp = sht->getTemperature();
+        humidity = sht->getHumidity();
         
         // Update temperature values
         esp_matter_attr_val_t temperature_value = esp_matter_invalid(NULL);
@@ -224,9 +234,13 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     }
 
     if (ens && ens->validateReading()) {
-        AirQuality::AirQualityEnum airQuality = map_aqi_uba(ens->getAQI());
+        co2 = ens->getECO2ppm();
+        tvoc = ens->getTVOCppb();
+        aqi = ens->getAQI();
+        
+        AirQuality::AirQualityEnum airQuality = map_aqi_uba(aqi);
         ESP_LOGI(TAG, "Updating Matter AQI: %u (air quality: %d, TVOC: %u ppb, eCO2: %u ppm)",
-                ens->getAQI(), static_cast<uint8_t>(airQuality), ens->getTVOCppb(), ens->getECO2ppm());
+                aqi, static_cast<uint8_t>(airQuality), tvoc, co2);
         
         if (s_airQualityInstance != nullptr) {
             // Lock the CHIP stack before calling UpdateAirQuality
@@ -235,6 +249,14 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         } else {
             ESP_LOGE(TAG, "Air Quality Instance not initialized");
         }
+    }
+    
+    // Update e-paper display periodically
+    update_count++;
+    if (update_count >= EPAPER_UPDATE_INTERVAL) {
+        update_count = 0;
+        ESP_LOGI(TAG, "Updating e-paper display (interval: %lu seconds)", EPAPER_UPDATE_INTERVAL);
+        epaper_update_display(sensor_manager);
     }
 }
 

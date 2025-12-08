@@ -1,4 +1,4 @@
-#include "includes/variables.hpp"
+#include "variables.hpp"
 
 // Matter endpoint IDs
 uint16_t temperature_endpoint_id = 1;

@@ -12,11 +12,11 @@
 #include <ens160.h>
 
 
-#include "includes/sensors.hpp"
-#include "includes/variables.hpp"
-#include "includes/driver.hpp"
+#include "sensors.hpp"
+#include "variables.hpp"
+#include "driver.hpp"
 
-static const char* TAG = "sensors";
+static const char* TAG = "SENSORS";
 
 // Shared I2C master bus for all I2C sensors on this board
 i2c_master_bus_handle_t i2c0_bus_hdl = nullptr;
@@ -87,8 +87,12 @@ esp_err_t SHT40Sensor::initialize() {
         return ESP_ERR_INVALID_STATE;
     }
 
-    // Default configuration from K0I05 driver
-    sht4x_config_t cfg = I2C_SHT4X_CONFIG_DEFAULT;
+    // Default configuration - avoid using macro due to field order issue
+    sht4x_config_t cfg = {};
+    cfg.i2c_address = I2C_SHT4X_DEV_ADDR_LO;
+    cfg.i2c_clock_speed = I2C_SHT4X_DEV_CLK_SPD;
+    cfg.repeat_mode = SHT4X_REPEAT_HIGH;
+    cfg.heater_mode = SHT4X_HEATER_OFF;
 
     // If you want to override, you can define these in config.hpp:
     //   SHT4X_REPEAT_MODE (sht4x_repeat_modes_t)

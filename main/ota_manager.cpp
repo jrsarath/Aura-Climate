@@ -3,9 +3,9 @@
 #include <esp_https_ota.h>
 #include <esp_app_format.h>
 #include <esp_crt_bundle.h>
-#include "includes/ota_manager.hpp"
+#include "ota_manager.hpp"
 
-static const char* TAG = "ota_manager";
+static const char* TAG = "OTA MANAGER";
 
 /**
  * @brief Initialize the OTA manager and check for any pending OTA updates.

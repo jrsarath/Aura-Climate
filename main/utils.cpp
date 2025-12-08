@@ -8,9 +8,9 @@
 #include <esp_log.h>
 #include <esp_matter.h>
 #include "iot_button.h"
-#include "includes/utils.hpp"
 #include "led_strip.h"
 #include "led_strip_rmt.h"
+#include "utils.hpp"
 
 static const char *TAG = "UTILS";
 static bool perform_factory_reset = false;
