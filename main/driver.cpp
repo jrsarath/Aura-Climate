@@ -192,7 +192,7 @@ esp_err_t driver_air_quality_init(uint16_t endpoint_id) {
  */
 void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     static uint32_t update_count = 0;
-    static const uint32_t EPAPER_UPDATE_INTERVAL = CONFIG_EINK_UPDATE_INTERVAL;
+    static const uint32_t EPAPER_UPDATE_INTERVAL = CONFIG_EPD_UPDATE_INTERVAL;
     
     if (!sensor_manager) {
         ESP_LOGE(TAG, "Invalid sensor manager pointer");

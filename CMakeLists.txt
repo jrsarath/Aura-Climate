@@ -10,6 +10,7 @@ set(PROJECT_VER_NUMBER 3)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
 set(EXTRA_COMPONENT_DIRS
+    "${CMAKE_CURRENT_SOURCE_DIR}/components"
     ${extra_components_dirs_append})
 
 project(climate)

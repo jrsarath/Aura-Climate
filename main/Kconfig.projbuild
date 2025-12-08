@@ -17,45 +17,10 @@ menu "Sensor Configuration"
 endmenu
 
 menu "E-Paper Display Configuration"
-    config EINK_PIN_MOSI
-        int "E-Paper MOSI (SDI) Pin"
-        default 19
-        help
-            GPIO pin for SPI MOSI (SDI) connected to e-paper display. Default is 19.
-    
-    config EINK_PIN_SCK
-        int "E-Paper SCK Pin"
-        default 18
-        help
-            GPIO pin for SPI clock connected to e-paper display. Default is 18.
-    
-    config EINK_PIN_CS
-        int "E-Paper CS Pin"
-        default 7
-        help
-            GPIO pin for SPI chip select connected to e-paper display. Default is 5.
-    
-    config EINK_PIN_DC
-        int "E-Paper DC Pin"
-        default 6
-        help
-            GPIO pin for Data/Command selection connected to e-paper display. Default is 17.
-    
-    config EINK_PIN_RST
-        int "E-Paper RST Pin"
-        default 5
-        help
-            GPIO pin for reset connected to e-paper display. Default is 16.
-    
-    config EINK_PIN_BUSY
-        int "E-Paper BUSY Pin"
-        default 4
-        help
-            GPIO pin for busy signal from e-paper display. Default is 4.
-    
-    config EINK_UPDATE_INTERVAL
+    config EPD_UPDATE_INTERVAL
         int "E-Paper Update Interval (seconds)"
         default 60
         help
             How often to update the e-paper display in seconds. Default is 60 seconds.
+
 endmenu

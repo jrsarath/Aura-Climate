@@ -140,6 +140,16 @@ extern "C" void app_main() {
     OTAManager::getInstance().enableAutoCheck(true);
     ESP_LOGI(TAG, "OTA manager initialized, running version: %s", OTAManager::getInstance().getCurrentVersion());
 
+     // Initialize e-paper display
+    err = epaper_init();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize e-paper display");
+        // Continue without e-paper display
+    } else {
+        // Test display with pattern
+        epaper_test_display();
+    }
+    
     // Initialize sensor manager
     sensor_manager = new SensorManager();
     err = sensor_manager->initialize();
@@ -227,18 +237,6 @@ extern "C" void app_main() {
     
     // Initial Matter attribute update
     update_matter_with_sensor_values(sensor_manager);
-    
-    // Initialize e-paper display
-    err = epaper_init();
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize e-paper display");
-        // Continue without e-paper display
-    } else {
-        // Initial display update
-        epaper_update_display(sensor_manager);
-    }
-
-
 
     #if CONFIG_ENABLE_CHIP_SHELL
         esp_matter::console::diagnostics_register_commands();

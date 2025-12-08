@@ -559,14 +559,65 @@ CONFIG_GPIO_INDICATOR_LED=8
 #
 # E-Paper Display Configuration
 #
-CONFIG_EINK_PIN_MOSI=21
-CONFIG_EINK_PIN_SCK=20
-CONFIG_EINK_PIN_CS=7
-CONFIG_EINK_PIN_DC=6
-CONFIG_EINK_PIN_RST=5
-CONFIG_EINK_PIN_BUSY=4
-CONFIG_EINK_UPDATE_INTERVAL=60
+CONFIG_EPD_UPDATE_INTERVAL=60
 # end of E-Paper Display Configuration
+
+#
+# Display Configuration
+#
+
+#
+# Fill only EPD entries for single SPI displays (Good display/Waveshare)
+#
+
+#
+# Mosi and Clock should be set for any epaper
+#
+CONFIG_EINK_SPI_MOSI=19
+CONFIG_EINK_SPI_CLK=18
+CONFIG_EINK_SPI_CS=10
+CONFIG_EINK_DC=11
+CONFIG_EINK_RST=2
+CONFIG_EINK_BUSY=3
+
+#
+# Important: Leave the rest of unconfigured GPIOs to -1 unless multi-SPI channels (wave12I48) or Plasticlogic EPDs
+#
+
+#
+# CS2 and MISO pins apply only to Plasticlogic.com epaper displays
+#
+CONFIG_EINK_SPI_CS2=-1
+CONFIG_EINK_SPI_MISO=-1
+
+#
+# Config below applies to 4 epaper module wave12I48 w/4 SPI CS & BUSY pins (14 pins)
+#
+
+#
+# | S2 | M2 |
+#
+
+#
+# -----------
+#
+
+#
+# | M1 | S1 |
+#
+CONFIG_EINK_SPI_M1_CS=0
+CONFIG_EINK_SPI_S1_CS=0
+CONFIG_EINK_SPI_M2_CS=0
+CONFIG_EINK_SPI_S2_CS=0
+CONFIG_EINK_SPI_M1_BUSY=0
+CONFIG_EINK_SPI_S1_BUSY=0
+CONFIG_EINK_SPI_M2_BUSY=0
+CONFIG_EINK_SPI_S2_BUSY=0
+CONFIG_EINK_M1S1_DC=0
+CONFIG_EINK_M2S2_DC=0
+CONFIG_EINK_M1S1_RST=0
+CONFIG_EINK_M2S2_RST=0
+# end of Display Configuration
 
 #
 # Compiler options
