@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <Digital7.h>
+#include "Digital7.h"
 #include "epaper_manager.hpp"
 #include "goodisplay/gdeq037T31.h"
 
