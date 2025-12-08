@@ -28,8 +28,8 @@ void epaper_clear_display(void);
 void epaper_sleep(void);
 
 /**
- * @brief Test e-paper display with simple pattern
+ * @brief Display a splash screen on the e-paper display
  */
-void epaper_test_display(void);
+void epaper_display_splash(void);
 
 #endif

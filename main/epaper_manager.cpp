@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "Digital7.h"
-#include "epaper_manager.hpp"
 #include "goodisplay/gdeq037T31.h"
+#include "epaper_manager.hpp"
+#include "FreeSans9pt7b.h"
 
 EpdSpi io;
 Gdeq037T31 display(io);
@@ -33,22 +33,11 @@ esp_err_t epaper_init(void) {
 
     display.fast_mode = true;
 
-    display.setFont(&digital_70pt7b);
+    display.setFont(&FreeSans9pt7b);
     display.fillScreen(EPD_WHITE);
     display.setTextColor(EPD_BLACK);
-    display.setTextSize(3);
-    
-    // Center the text on screen
-    int16_t text_width = 10 * 18;
-    int16_t text_height = 24;
-    int16_t x = (display.width() - text_width) / 2;
-    int16_t y = (display.height() - text_height) / 2;
-    
-    display.setCursor(x, y);
-    display.print("48 Studios");
-    display.update();
 
-    display.update();
+    epaper_display_splash();
 
     epd_initialized = true;
     ESP_LOGI(TAG, "E-paper display initialized successfully");
@@ -113,9 +102,9 @@ void epaper_sleep(void) {
 }
 
 /**
- * @brief Test e-paper display with simple pattern
+ * @brief Display a splash screen on the e-paper display
  */
-void epaper_test_display(void) {
+void epaper_display_splash(void) {
     if (!epd_initialized) {
         ESP_LOGW(TAG, "E-paper display not initialized");
         return;
@@ -125,16 +114,30 @@ void epaper_test_display(void) {
     
     display.fillScreen(EPD_WHITE);
     display.setTextColor(EPD_BLACK);
+
+    const char *line1 = "Aura Climate";
+    const char *line2 = "by 48 Studios";
+
+    // Line 1: size 3 – compute width/height with current font
     display.setTextSize(3);
-    
-    // Center the text on screen
-    int16_t text_width = 10 * 18;  
-    int16_t text_height = 24;
-    int16_t x = (display.width() - text_width) / 2;
-    int16_t y = (display.height() - text_height) / 2;
-    
-    display.setCursor(x, y);
-    display.print("48 Studios");
+    int16_t x1, y1;
+    uint16_t w1, h1;
+    display.getTextBounds(line1, 0, 0, &x1, &y1, &w1, &h1);
+    int16_t cx1 = (display.width() - w1) / 2;
+    int16_t cy1 = (display.height() / 2) - h1;  // move up by its own height for balance
+    display.setCursor(cx1, cy1);
+    display.print(line1);
+
+    // Line 2: size 2 – recompute bounds after changing size
+    display.setTextSize(2);
+    int16_t x2, y2;
+    uint16_t w2, h2;
+    display.getTextBounds(line2, 0, 0, &x2, &y2, &w2, &h2);
+    int16_t cx2 = (display.width() - w2) / 2;
+    int16_t cy2 = cy1 + h1 + 10;  // place below line1 with small gap
+    display.setCursor(cx2, cy2);
+    display.print(line2);
+
     display.update();
     
     ESP_LOGI(TAG, "Display test complete");
