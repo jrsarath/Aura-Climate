@@ -2,8 +2,8 @@
 # CMakeLists in this exact order for cmake to work correctly
 cmake_minimum_required(VERSION 3.5)
 
-set(PROJECT_VER "2.0.0")
-set(PROJECT_VER_NUMBER 3)
+set(PROJECT_VER "2.0.1")
+set(PROJECT_VER_NUMBER 4)
 
 
 # This should be done before using the IDF_TARGET variable.

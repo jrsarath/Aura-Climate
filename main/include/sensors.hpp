@@ -60,6 +60,8 @@ class SHT40Sensor : public SensorBase {
     private:
         float            temperature;
         float            humidity;
+        mutable float    last_updated_temperature;
+        mutable float    last_updated_humidity;
         sht4x_handle_t   sht_handle;
 
     public:
@@ -73,6 +75,8 @@ class SHT40Sensor : public SensorBase {
         float getTemperature() const { return temperature; }
         float getHumidity()    const { return humidity; }
         bool  validateReading() const;
+        bool  hasChanged() const;
+        void  markUpdated() const;
 };
 
 /**
@@ -84,6 +88,9 @@ class ENS160Sensor : public SensorBase {
         uint8_t         aqi;
         uint16_t        tvoc_ppb;
         uint16_t        eco2_ppm;
+        mutable uint8_t         last_updated_aqi;
+        mutable uint16_t        last_updated_tvoc_ppb;
+        mutable uint16_t        last_updated_eco2_ppm;
         ens160_handle_t ens_handle;
 
     public:
@@ -98,6 +105,8 @@ class ENS160Sensor : public SensorBase {
         uint16_t getTVOCppb()  const { return tvoc_ppb; }
         uint16_t getECO2ppm()  const { return eco2_ppm; }
         bool     validateReading() const;
+        bool     hasChanged() const;
+        void     markUpdated() const;
 };
 
 /**

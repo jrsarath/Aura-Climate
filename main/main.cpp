@@ -22,7 +22,6 @@
 #include "ota_manager.hpp"
 #include "utils.hpp"
 #include "epaper_manager.hpp"
-#include "time_manager.hpp"
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
@@ -43,7 +42,6 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
         case chip::DeviceLayer::DeviceEventType::kInterfaceIpAddressChanged:
             ESP_LOGI(TAG, "Interface IP Address Changed");
             OTAManager::getInstance().setNetworkReady(true);
-            time_manager_handle_ip_available();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:

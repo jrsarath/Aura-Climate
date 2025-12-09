@@ -1,11 +1,10 @@
 #include <esp_log.h>
 #include <esp_app_format.h>
 #include <esp_ota_ops.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
+#include <esp_timer.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/queue.h>
@@ -24,6 +23,9 @@ static bool epd_initialized = false;
 static TaskHandle_t epaper_task_handle = NULL;
 static QueueHandle_t epaper_queue = NULL;
 
+// Track last display refresh time (microseconds)
+static uint64_t last_refresh_time_us = 0;
+
 // Display update request structure
 typedef struct {
     float temperature;
@@ -33,6 +35,45 @@ typedef struct {
     uint16_t co2;
     bool matter_connected;
 } epaper_update_t;
+
+/**
+ * @brief Format elapsed time as human-readable string (e.g., "2s ago", "5min ago", "1h ago")
+ * 
+ * @param elapsed_ms Milliseconds since last refresh
+ * @param buffer Output buffer for the formatted string
+ * @param buffer_size Size of the output buffer
+ */
+static void format_time_ago(uint64_t elapsed_ms, char* buffer, size_t buffer_size) {
+    if (!buffer || buffer_size < 10) {
+        if (buffer && buffer_size > 0) buffer[0] = '\0';
+        return;
+    }
+
+    if (elapsed_ms < 1000) {
+        // Less than 1 second
+        snprintf(buffer, buffer_size, "now");
+    } else if (elapsed_ms < 60000) {
+        // Less than 1 minute - show seconds
+        uint64_t secs = elapsed_ms / 1000;
+        snprintf(buffer, buffer_size, "%llus", secs);
+    } else if (elapsed_ms < 3600000) {
+        // Less than 1 hour - show minutes
+        uint64_t mins = elapsed_ms / 60000;
+        snprintf(buffer, buffer_size, "%llum", mins);
+    } else if (elapsed_ms < 86400000) {
+        // Less than 1 day - show hours
+        uint64_t hrs = elapsed_ms / 3600000;
+        snprintf(buffer, buffer_size, "%lluh", hrs);
+    } else if (elapsed_ms < 604800000) {
+        // Less than 1 week - show days
+        uint64_t days = elapsed_ms / 86400000;
+        snprintf(buffer, buffer_size, "%llud", days);
+    } else {
+        // 1 week or more - show weeks
+        uint64_t weeks = elapsed_ms / 604800000;
+        snprintf(buffer, buffer_size, "%lluw", weeks);
+    }
+}
 
 /**
  * @brief Internal function to update display with pre-fetched sensor data
@@ -69,26 +110,15 @@ static void epaper_update_internal(const epaper_update_t* data) {
      * 
      */
 
-    // Time (top right of left section)
+    // Time (top right of left section) - Display "last refreshed" time
     display.setTextSize(1);
-    // Get current time
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-
-    bool time_valid = timeinfo.tm_year >= (2020 - 1900);
-    if (time_valid) {
-        // Format time as 12-hour with AM/PM
-        int hour = timeinfo.tm_hour;
-        const char* am_pm = (hour >= 12) ? "PM" : "AM";
-        if (hour > 12) hour -= 12;
-        if (hour == 0) hour = 12;
-        snprintf(line, sizeof(line), "%d:%02d %s", hour, timeinfo.tm_min, am_pm);
-    } else {
-        // Show placeholder until SNTP sync completes
-        snprintf(line, sizeof(line), "--:--");
-    }
+    
+    // Calculate elapsed time since last refresh
+    uint64_t current_time_us = esp_timer_get_time();
+    uint64_t elapsed_us = current_time_us - last_refresh_time_us;
+    uint64_t elapsed_ms = elapsed_us / 1000;
+    
+    format_time_ago(elapsed_ms, line, sizeof(line));
 
     display.getTextBounds(line, 0, 0, &x, &y, &w, &h);
     int16_t time_x = (left_section_x + left_section_w) - w - padding;
@@ -343,6 +373,8 @@ static void epaper_update_internal(const epaper_update_t* data) {
         display.print(matter_text);
     }
 
+    // Update the last refresh timestamp before pushing to display
+    last_refresh_time_us = esp_timer_get_time();
     display.update();
 }
 

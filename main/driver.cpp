@@ -100,7 +100,7 @@ void driver_identify_pulse(uint16_t endpoint_id) {
         driver_identify_stop();
     }
 
-    uint32_t blinks = 3;
+    uint32_t blinks [[maybe_unused]] = 3;
 
     // TODO: Define different color blink for different sensors
     // gpio_num_t gpio = get_gpio_by_endpoint(endpoint_id);
@@ -193,6 +193,8 @@ esp_err_t driver_air_quality_init(uint16_t endpoint_id) {
 void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     static uint32_t update_count = 0;
     static const uint32_t EPAPER_UPDATE_INTERVAL = CONFIG_EPD_UPDATE_INTERVAL;
+    static bool sht_updated = false;
+    static bool ens_updated = false;
     
     if (!sensor_manager) {
         ESP_LOGE(TAG, "Invalid sensor manager pointer");
@@ -202,21 +204,16 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
     const SHT40Sensor* sht = sensor_manager->getSHT40Sensor();
     const ENS160Sensor* ens = sensor_manager->getENS160Sensor();
 
-    float temp = 0.0f;
-    float humidity = 0.0f;
-    uint16_t co2 = 0;
-    uint16_t tvoc = 0;
-    uint16_t aqi = 0;
-
-    if (sht && sht->validateReading()) {
-        temp = sht->getTemperature();
-        humidity = sht->getHumidity();
+    // Check SHT40 sensor for significant changes
+    if (sht && sht->validateReading() && sht->hasChanged()) {
+        float temp = sht->getTemperature();
+        float humidity = sht->getHumidity();
         
         // Update temperature values
         esp_matter_attr_val_t temperature_value = esp_matter_invalid(NULL);
         temperature_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_INT16;
         temperature_value.val.i16 = static_cast<int16_t>(temp * 100);
-        ESP_LOGI(TAG, "Updating Matter temperature: %.2f°C (raw: %d)", temp, temperature_value.val.i16);
+        ESP_LOGI(TAG, "Temperature changed: %.2f°C (raw: %d) - updating Matter", temp, temperature_value.val.i16);
         esp_matter::attribute::update(temperature_endpoint_id, 
                                     TemperatureMeasurement::Id, 
                                     TemperatureMeasurement::Attributes::MeasuredValue::Id, 
@@ -226,20 +223,33 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         esp_matter_attr_val_t humidity_value = esp_matter_invalid(NULL);
         humidity_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_UINT16;
         humidity_value.val.u16 = static_cast<uint16_t>(humidity * 100);
-        ESP_LOGI(TAG, "Updating Matter humidity: %.2f%% (raw: %u)", humidity, humidity_value.val.u16);
+        ESP_LOGI(TAG, "Humidity changed: %.2f%% (raw: %u) - updating Matter", humidity, humidity_value.val.u16);
         esp_matter::attribute::update(humidity_endpoint_id, 
                                     RelativeHumidityMeasurement::Id, 
                                     RelativeHumidityMeasurement::Attributes::MeasuredValue::Id, 
                                     &humidity_value);
+        
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-fpermissive"
+        sht->markUpdated();
+#pragma GCC diagnostic pop
+        sht_updated = true;
+    } else if (sht && sht->validateReading()) {
+        if (sht_updated) {
+            ESP_LOGD(TAG, "SHT40 readings unchanged: %.1f°C, %.1f%%", 
+                     sht->getTemperature(), sht->getHumidity());
+            sht_updated = false;
+        }
     }
 
-    if (ens && ens->validateReading()) {
-        co2 = ens->getECO2ppm();
-        tvoc = ens->getTVOCppb();
-        aqi = ens->getAQI();
+    // Check ENS160 sensor for significant changes
+    if (ens && ens->validateReading() && ens->hasChanged()) {
+        uint8_t aqi = ens->getAQI();
+        uint16_t tvoc = ens->getTVOCppb();
+        uint16_t co2 = ens->getECO2ppm();
         
         AirQuality::AirQualityEnum airQuality = map_aqi_uba(aqi);
-        ESP_LOGI(TAG, "Updating Matter AQI: %u (air quality: %d, TVOC: %u ppb, eCO2: %u ppm)",
+        ESP_LOGI(TAG, "Air quality changed: AQI %u (air quality: %d, TVOC: %u ppb, eCO2: %u ppm) - updating Matter",
                 aqi, static_cast<uint8_t>(airQuality), tvoc, co2);
         
         if (s_airQualityInstance != nullptr) {
@@ -249,9 +259,21 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         } else {
             ESP_LOGE(TAG, "Air Quality Instance not initialized");
         }
+        
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-fpermissive"
+        ens->markUpdated();
+#pragma GCC diagnostic pop
+        ens_updated = true;
+    } else if (ens && ens->validateReading()) {
+        if (ens_updated) {
+            ESP_LOGD(TAG, "ENS160 readings unchanged: AQI %u, TVOC %u ppb, eCO2 %u ppm",
+                     ens->getAQI(), ens->getTVOCppb(), ens->getECO2ppm());
+            ens_updated = false;
+        }
     }
     
-    // Update e-paper display periodically
+    // Update e-paper display periodically (independent of Matter updates)
     update_count++;
     if (update_count >= EPAPER_UPDATE_INTERVAL) {
         update_count = 0;

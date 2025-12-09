@@ -1,4 +1,5 @@
 #include <string.h>
+#include <cmath>
 #include <esp_err.h>
 #include <esp_log.h>
 #include <esp_check.h>
@@ -63,7 +64,8 @@ static esp_err_t init_i2c_bus() {
  * 
  */
 SHT40Sensor::SHT40Sensor()
-    : SensorBase("SHT40"), temperature(0.0f), humidity(0.0f), sht_handle(nullptr) {}
+    : SensorBase("SHT40"), temperature(0.0f), humidity(0.0f), 
+      last_updated_temperature(0.0f), last_updated_humidity(0.0f), sht_handle(nullptr) {}
 
 /**
  * @brief Destroy the SHT40Sensor::SHT40Sensor object
@@ -168,11 +170,35 @@ bool SHT40Sensor::validateReading() const {
 }
 
 /**
+ * @brief Check if SHT40 sensor readings have changed since last update.
+ * Uses 0.1°C and 0.5% RH thresholds to avoid trivial fluctuations.
+ * 
+ * @return true if readings have changed significantly, false otherwise.
+ */
+bool SHT40Sensor::hasChanged() const {
+    const float temp_threshold = 0.1f;    // 0.1°C threshold
+    const float humidity_threshold = 0.5f; // 0.5% RH threshold
+    
+    return (fabs(temperature - last_updated_temperature) >= temp_threshold) ||
+           (fabs(humidity - last_updated_humidity) >= humidity_threshold);
+}
+
+/**
+ * @brief Mark current readings as updated (store for next comparison).
+ * 
+ */
+void SHT40Sensor::markUpdated() const {
+    last_updated_temperature = temperature;
+    last_updated_humidity = humidity;
+}
+
+/**
  * @brief Constructor for ENS160Sensor class.
  * 
  */
 ENS160Sensor::ENS160Sensor()
-    : SensorBase("ENS160"), aqi(0), tvoc_ppb(0), eco2_ppm(0), ens_handle(nullptr) {}
+    : SensorBase("ENS160"), aqi(0), tvoc_ppb(0), eco2_ppm(0),
+      last_updated_aqi(0), last_updated_tvoc_ppb(0), last_updated_eco2_ppm(0), ens_handle(nullptr) {}
 
 /**
  * @brief Destructor to clean up ENS160 resources.
@@ -285,6 +311,34 @@ bool ENS160Sensor::validateReading() const {
 }
 
 /**
+ * @brief Check if ENS160 sensor readings have changed since last update.
+ * Uses thresholds: AQI by 1 level, TVOC/eCO2 by 5% to avoid trivial fluctuations.
+ * 
+ * @return true if readings have changed significantly, false otherwise.
+ */
+bool ENS160Sensor::hasChanged() const {
+    const uint16_t tvoc_threshold = (last_updated_tvoc_ppb > 500) ? 
+                                     (last_updated_tvoc_ppb / 20) : 25;  // ~5% threshold
+    const uint16_t eco2_threshold = (last_updated_eco2_ppm > 500) ?
+                                     (last_updated_eco2_ppm / 20) : 25;  // ~5% threshold
+    
+    return (aqi >= 1 && aqi <= 5 && 
+            (aqi != last_updated_aqi ||
+             abs(static_cast<int>(tvoc_ppb) - static_cast<int>(last_updated_tvoc_ppb)) >= static_cast<int>(tvoc_threshold) ||
+             abs(static_cast<int>(eco2_ppm) - static_cast<int>(last_updated_eco2_ppm)) >= static_cast<int>(eco2_threshold)));
+}
+
+/**
+ * @brief Mark current readings as updated (store for next comparison).
+ * 
+ */
+void ENS160Sensor::markUpdated() const {
+    last_updated_aqi = aqi;
+    last_updated_tvoc_ppb = tvoc_ppb;
+    last_updated_eco2_ppm = eco2_ppm;
+}
+
+/**
  * @brief Constructor for SensorManager class.
  * 
  */
@@ -339,7 +393,6 @@ esp_err_t SensorManager::initialize() {
  */
 void SensorManager::readingTask(void* parameters) {
     auto* manager = static_cast<SensorManager*>(parameters);
-    uint32_t last_matter_update = 0;
     uint32_t last_epaper_update = 0;
 
     while (manager->running) {
@@ -372,12 +425,8 @@ void SensorManager::readingTask(void* parameters) {
             ESP_LOGW(TAG, "Failed to read ENS160 sensor or invalid reading");
         }
 
-        // Update Matter attributes only at the specified interval
-        if (current_time - last_matter_update >= MATTER_UPDATE_INTERVAL_MS) {
-            update_matter_with_sensor_values(manager);
-            last_matter_update = current_time;
-            ESP_LOGI(TAG, "Matter attributes updated");
-        }
+        // Update Matter attributes with change detection (only updates if values changed significantly)
+        update_matter_with_sensor_values(manager);
 
         // Update e-paper independently of Matter commissioning (non-blocking)
         const uint32_t epaper_interval_ms = CONFIG_EPD_UPDATE_INTERVAL * 1000; // seconds -> ms
