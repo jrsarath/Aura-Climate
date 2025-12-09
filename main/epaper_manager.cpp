@@ -92,7 +92,9 @@ static void epaper_update_internal(const epaper_update_t* data) {
 
     display.getTextBounds(line, 0, 0, &x, &y, &w, &h);
     int16_t time_x = (left_section_x + left_section_w) - w - padding;
-    display.setCursor(time_x, padding);
+    int16_t time_y = padding - y;
+
+    display.setCursor(time_x, time_y);
     display.print(line);
 
     // CENTER: TEMP label and value (centered in left section)
