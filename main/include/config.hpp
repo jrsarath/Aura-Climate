@@ -6,8 +6,8 @@
 #define SYSTEM_WATCHDOG_TIMEOUT_MS 5000
 
 // Sensor Configuration
-#define SENSOR_READ_INTERVAL_MS    60000
-#define MATTER_UPDATE_INTERVAL_MS  60000
+#define SENSOR_READ_INTERVAL_MS    10000 // 60000 ms = 1 minutes
+#define MATTER_UPDATE_INTERVAL_MS  10000 // 30000 ms = 30 seconds
 #define SENSOR_MAX_RETRIES         3
 #define SENSOR_RETRY_DELAY_MS      1000
 
@@ -50,3 +50,13 @@
 // Matter Configuration
 #define MATTER_MAX_ENDPOINTS       16
 #define COMMISSIONING_TIMEOUT_SEC  300 
+
+// SNTP CONFIG
+#define SNTP_SERVER1               "pool.ntp.org"
+#define SNTP_SERVER2               "time.nist.gov"
+#define SNTP_SERVER3               "time.google.com"
+#define SNTP_STARTUP_DELAY_MS      2000  // Delay before starting SNTP after IP available
+#define SNTP_DEFAULT_TZ           "UTC-05:30"  // Asia/Kolkata (IST)
+// Timezone Auto-Detection Configuration
+#define TIMEZONE_API_URL           "http://worldtimeapi.org/api/ip"
+#define TIMEZONE_API_TIMEOUT_MS    5000

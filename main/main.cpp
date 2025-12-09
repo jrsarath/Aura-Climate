@@ -22,6 +22,7 @@
 #include "ota_manager.hpp"
 #include "utils.hpp"
 #include "epaper_manager.hpp"
+#include "time_manager.hpp"
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
@@ -42,6 +43,7 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
         case chip::DeviceLayer::DeviceEventType::kInterfaceIpAddressChanged:
             ESP_LOGI(TAG, "Interface IP Address Changed");
             OTAManager::getInstance().setNetworkReady(true);
+            time_manager_handle_ip_available();
             break;
 
         case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:
@@ -130,6 +132,14 @@ extern "C" void app_main() {
         return;
     }
 
+    // Initialize reset button
+    driver_handle button_handle = driver_button_init();
+    if (!button_handle) {
+        ESP_LOGE(TAG, "Failed to initialize button");
+        return;
+    }
+    app_reset_button_register(button_handle);
+
     // Initialize OTA manager
     err = OTAManager::getInstance().initialize();
     if (err != ESP_OK) {
@@ -147,6 +157,11 @@ extern "C" void app_main() {
         // Continue without e-paper display
     } else {
         epaper_display_splash();
+        // Start the non-blocking display update task
+        err = epaper_start_task();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to start e-paper task");
+        }
     }
     
     // Initialize sensor manager
@@ -156,14 +171,6 @@ extern "C" void app_main() {
         ESP_LOGE(TAG, "Failed to initialize sensor manager");
         return;
     }
-
-    // Initialize reset button
-    driver_handle button_handle = driver_button_init();
-    if (!button_handle) {
-        ESP_LOGE(TAG, "Failed to initialize button");
-        return;
-    }
-    app_reset_button_register(button_handle);
 
     // Create Matter node
     node::config_t node_config;

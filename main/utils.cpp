@@ -7,6 +7,8 @@
 #include <freertos/task.h>
 #include <esp_log.h>
 #include <esp_matter.h>
+#include <app/server/Server.h>
+#include <credentials/FabricTable.h>
 #include "iot_button.h"
 #include "led_strip.h"
 #include "led_strip_rmt.h"
@@ -314,4 +316,15 @@ void argb_stop_commissioning(void) {
     }
 
     ESP_LOGI(TAG, "Commissioning stopped");
+}
+
+/**
+ * @brief Check if Matter device is commissioned (has at least one fabric)
+ * 
+ * @return true if commissioned, false otherwise
+ */
+bool is_matter_connected(void) {
+    using namespace chip;
+    auto& fabricTable = Server::GetInstance().GetFabricTable();
+    return fabricTable.FabricCount() > 0;
 }

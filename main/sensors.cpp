@@ -15,6 +15,8 @@
 #include "sensors.hpp"
 #include "variables.hpp"
 #include "driver.hpp"
+#include "epaper_manager.hpp"
+#include "utils.hpp"
 
 static const char* TAG = "SENSORS";
 
@@ -338,6 +340,7 @@ esp_err_t SensorManager::initialize() {
 void SensorManager::readingTask(void* parameters) {
     auto* manager = static_cast<SensorManager*>(parameters);
     uint32_t last_matter_update = 0;
+    uint32_t last_epaper_update = 0;
 
     while (manager->running) {
         const uint32_t current_time = esp_timer_get_time() / 1000;  // us → ms
@@ -374,6 +377,14 @@ void SensorManager::readingTask(void* parameters) {
             update_matter_with_sensor_values(manager);
             last_matter_update = current_time;
             ESP_LOGI(TAG, "Matter attributes updated");
+        }
+
+        // Update e-paper independently of Matter commissioning (non-blocking)
+        const uint32_t epaper_interval_ms = CONFIG_EPD_UPDATE_INTERVAL * 1000; // seconds -> ms
+        if (current_time - last_epaper_update >= epaper_interval_ms) {
+            last_epaper_update = current_time;
+            bool matter_connected = is_matter_connected();
+            epaper_request_update(manager, matter_connected);
         }
 
         vTaskDelay(pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS));

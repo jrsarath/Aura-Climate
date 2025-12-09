@@ -11,11 +11,28 @@
 esp_err_t epaper_init(void);
 
 /**
- * @brief Update e-paper display with current sensor data
+ * @brief Start the e-paper display update task
+ * 
+ * @return ESP_OK on success, ESP_FAIL on error
+ */
+esp_err_t epaper_start_task(void);
+
+/**
+ * @brief Request a non-blocking display update (queues the request)
  * 
  * @param sensor_manager Pointer to the SensorManager instance
+ * @param matter_connected Matter connection status (true if connected)
  */
-void epaper_update_display(const SensorManager* sensor_manager);
+void epaper_request_update(const SensorManager* sensor_manager, bool matter_connected = false);
+
+/**
+ * @brief Update e-paper display with current sensor data (blocking)
+ * 
+ * @param sensor_manager Pointer to the SensorManager instance
+ * @param matter_connected Matter connection status (true if connected)
+ * @note This is a blocking call. Use epaper_request_update() for non-blocking updates.
+ */
+void epaper_update_display(const SensorManager* sensor_manager, bool matter_connected = false);
 
 /**
  * @brief Clear the e-paper display to white

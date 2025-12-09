@@ -93,3 +93,10 @@ void argb_start_commissioning(int gpio_num, uint32_t count);
  * 
  */
 void argb_stop_commissioning(void);
+
+/**
+ * @brief Check if Matter device is commissioned (has at least one fabric)
+ * 
+ * @return true if commissioned, false otherwise
+ */
+bool is_matter_connected(void);

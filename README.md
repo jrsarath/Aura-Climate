@@ -25,6 +25,13 @@ This project includes a custom PCB integrating a Sensirion SHT40 and an ENS160 f
 - [PCB Schema](https://365.altium.com/files/E2252F43-3197-4BE0-AAA4-C608606C2910)
 - [Demo Device](assets/device.jpg)
 
+### E-paper display
+- Panel: Good Display GDEQ037T31 (3.7" 240x416), landscape (rotation 3)
+- Driver stack: CalEPD + Adafruit-GFX (local components)
+- Layout: two-column split (temp on left, air-quality on right); top shows time, bottom shows product name/version
+- Pins: MOSI 19, CLK 18, CS 4, DC 5, RST 6, BUSY 7 (set via menuconfig)
+- Notes: fast mode enabled; display updates run in a dedicated task (non-blocking)
+
 ## Other firmwares
 - [Aura Control](https://github.com/jrsarath/aura-control)
 
