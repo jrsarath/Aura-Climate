@@ -1040,9 +1040,9 @@ CONFIG_PARTITION_TABLE_MD5=y
 # Sensor Configuration
 #
 # default:
-CONFIG_GPIO_I2C_MASTER_SDA=23
+CONFIG_GPIO_I2C_MASTER_SDA=6
 # default:
-CONFIG_GPIO_I2C_MASTER_SCL=22
+CONFIG_GPIO_I2C_MASTER_SCL=7
 # default:
 CONFIG_GPIO_INDICATOR_LED=8
 # end of Sensor Configuration
@@ -1066,17 +1066,17 @@ CONFIG_EPD_UPDATE_INTERVAL=60
 # Mosi and Clock should be set for any epaper
 #
 # default:
-CONFIG_EINK_SPI_MOSI=23
+CONFIG_EINK_SPI_MOSI=19
 # default:
 CONFIG_EINK_SPI_CLK=18
 # default:
-CONFIG_EINK_SPI_CS=32
+CONFIG_EINK_SPI_CS=10
 # default:
-CONFIG_EINK_DC=27
+CONFIG_EINK_DC=11
 # default:
-CONFIG_EINK_RST=26
+CONFIG_EINK_RST=2
 # default:
-CONFIG_EINK_BUSY=35
+CONFIG_EINK_BUSY=3
 
 #
 # Important: Leave the rest of unconfigured GPIOs to -1 unless multi-SPI channels (wave12I48) or Plasticlogic EPDs

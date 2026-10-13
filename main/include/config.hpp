@@ -21,7 +21,7 @@
 #define SHT4X_REPEATABILITY        SHT4X_HIGH
 
 // ENS160 Sensor Configuration
-#define ENS160_I2C_ADDR            0x53
+#define ENS160_I2C_ADDR            0x52
 #define ENS160_ERROR_RETRY_COUNT   3
 #define ENS160_MIN_AQI             1
 #define ENS160_MAX_AQI             5
