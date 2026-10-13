@@ -100,7 +100,7 @@ void driver_identify_pulse(uint16_t endpoint_id) {
         driver_identify_stop();
     }
 
-    uint32_t blinks [[maybe_unused]] = 3;
+    uint32_t blinks = 3;
 
     // TODO: Define different color blink for different sensors
     // gpio_num_t gpio = get_gpio_by_endpoint(endpoint_id);
@@ -229,10 +229,7 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
                                     RelativeHumidityMeasurement::Attributes::MeasuredValue::Id, 
                                     &humidity_value);
         
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-fpermissive"
         sht->markUpdated();
-#pragma GCC diagnostic pop
         sht_updated = true;
     } else if (sht && sht->validateReading()) {
         if (sht_updated) {
@@ -260,10 +257,7 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
             ESP_LOGE(TAG, "Air Quality Instance not initialized");
         }
         
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-fpermissive"
         ens->markUpdated();
-#pragma GCC diagnostic pop
         ens_updated = true;
     } else if (ens && ens->validateReading()) {
         if (ens_updated) {

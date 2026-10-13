@@ -15,5 +15,6 @@
     "--compile-commands-dir=/Users/jrsarath/Documents/GitHub/Aura-Climate/build"
   ],
   "idf.port": "/dev/tty.usbmodem5AAF2850211",
-  "idf.flashType": "UART"
+  "idf.flashType": "UART",
+  "idf.currentSetup": "/Users/jrsarath/.espressif/v5.5.4/esp-idf"
 }
