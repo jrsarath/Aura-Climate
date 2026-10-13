@@ -1,4 +1,5 @@
 /* Implement IoInterface for SPI communication with 4 Chip selects */
+#include "esp_idf_version.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 

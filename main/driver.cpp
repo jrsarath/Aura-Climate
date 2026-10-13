@@ -31,8 +31,6 @@ static volatile bool s_ident_running_drv = false;
 static uint16_t s_ident_count_drv = 0;
 static gpio_num_t s_ident_gpio_drv = GPIO_NUM_NC;
 
-// Air Quality Instance for managing air quality attributes
-static AirQuality::Instance* s_airQualityInstance = nullptr;
 AirQuality::AirQualityEnum map_aqi_uba(uint8_t aqi) {
     switch (aqi) {
         case 1: return AirQuality::AirQualityEnum::kGood;
@@ -157,31 +155,7 @@ esp_err_t driver_air_quality_init(uint16_t endpoint_id) {
         return ESP_ERR_INVALID_STATE;
     }
 
-    // Create Air Quality Instance with features
-    s_airQualityInstance = new AirQuality::Instance(
-        chip::EndpointId(endpoint_id),
-        chip::BitMask<AirQuality::Feature, uint32_t>(
-            AirQuality::Feature::kFair, 
-            AirQuality::Feature::kModerate,
-            AirQuality::Feature::kVeryPoor,
-            AirQuality::Feature::kExtremelyPoor
-        )
-    );
-    
-    if (!s_airQualityInstance) {
-        ESP_LOGE(TAG, "Failed to allocate memory for Air Quality Instance");
-        return ESP_FAIL;
-    }
-    
-    CHIP_ERROR err = s_airQualityInstance->Init();
-    if (err != CHIP_NO_ERROR) {
-        ESP_LOGE(TAG, "Failed to initialize Air Quality Instance: %" CHIP_ERROR_FORMAT, err.Format());
-        delete s_airQualityInstance;
-        s_airQualityInstance = nullptr;
-        return ESP_FAIL;
-    }
-    
-    ESP_LOGI(TAG, "Air Quality Instance initialized successfully");
+    ESP_LOGI(TAG, "Air Quality initialized successfully");
     return ESP_OK;
 }
 
@@ -249,13 +223,11 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         ESP_LOGI(TAG, "Air quality changed: AQI %u (air quality: %d, TVOC: %u ppb, eCO2: %u ppm) - updating Matter",
                 aqi, static_cast<uint8_t>(airQuality), tvoc, co2);
         
-        if (s_airQualityInstance != nullptr) {
-            // Lock the CHIP stack before calling UpdateAirQuality
-            chip::DeviceLayer::StackLock lock;
-            s_airQualityInstance->UpdateAirQuality(airQuality);
-        } else {
-            ESP_LOGE(TAG, "Air Quality Instance not initialized");
-        }
+        esp_matter_attr_val_t air_quality_value = esp_matter_enum8(static_cast<uint8_t>(airQuality));
+        esp_matter::attribute::update(air_quality_endpoint_id,
+                                      AirQuality::Id,
+                                      AirQuality::Attributes::AirQuality::Id,
+                                      &air_quality_value);
         
         ens->markUpdated();
         ens_updated = true;

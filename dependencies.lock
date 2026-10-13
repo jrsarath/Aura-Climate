@@ -219,6 +219,6 @@ direct_dependencies:
 - espressif/esp_matter
 - k0i05/esp_ens160
 - k0i05/esp_sht4x
-manifest_hash: e1959afd73a58d361e41d354eeca67ea8af63d6653cf86d9791fc68c407b9844
+manifest_hash: 8c15043f65e120e8280ba29bf0cde2e7198369b9d0361c1b9076f84fe17a0f34
 target: esp32c6
 version: 3.0.0

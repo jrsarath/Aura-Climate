@@ -1,6 +1,7 @@
 /* SPI Master IO class */
 #include <epdspi.h>
 #include <string.h>
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 #ifdef CONFIG_IDF_TARGET_ESP32
@@ -37,14 +38,13 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
     
     esp_err_t ret;
     // MISO not used, only Master to Slave
-    spi_bus_config_t buscfg={
-        .mosi_io_num=CONFIG_EINK_SPI_MOSI,
-        .miso_io_num = -1,
-        .sclk_io_num=CONFIG_EINK_SPI_CLK,
-        .quadwp_io_num=-1,
-        .quadhd_io_num=-1,
-        .max_transfer_sz=4094
-    };
+    spi_bus_config_t buscfg = {};
+    buscfg.mosi_io_num = CONFIG_EINK_SPI_MOSI;
+    buscfg.miso_io_num = -1;
+    buscfg.sclk_io_num = CONFIG_EINK_SPI_CLK;
+    buscfg.quadwp_io_num = -1;
+    buscfg.quadhd_io_num = -1;
+    buscfg.max_transfer_sz = 4094;
     // max_transfer_sz   4Kb is the defaut SPI transfer size if 0
     // debug: 50000  0.5 Mhz so we can sniff the SPI commands with a Slave
     uint16_t multiplier = 1000;
@@ -53,14 +53,13 @@ void EpdSpi::init(uint8_t frequency=4,bool debug=false){
         multiplier = 1;
     }
     //Config Frequency and SS GPIO
-    spi_device_interface_config_t devcfg={
-        .mode=0,  //SPI mode 0
-        .clock_speed_hz=frequency*multiplier*1000,  // DEBUG: 50000 - No debug usually 4 Mhz
-        .input_delay_ns=0,
-        .spics_io_num=CONFIG_EINK_SPI_CS,
-        .flags = (SPI_DEVICE_HALFDUPLEX | SPI_DEVICE_3WIRE),
-        .queue_size=5
-    };
+    spi_device_interface_config_t devcfg = {};
+    devcfg.mode = 0;  //SPI mode 0
+    devcfg.clock_speed_hz = frequency*multiplier*1000;  // DEBUG: 50000 - No debug usually 4 Mhz
+    devcfg.input_delay_ns = 0;
+    devcfg.spics_io_num = CONFIG_EINK_SPI_CS;
+    devcfg.flags = (SPI_DEVICE_HALFDUPLEX | SPI_DEVICE_3WIRE);
+    devcfg.queue_size = 5;
     // DISABLED Callbacks pre_cb/post_cb. SPI does not seem to behave the same
     // CS / DC GPIO states the usual way
 
