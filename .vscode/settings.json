@@ -12,7 +12,7 @@
     "--query-driver=**",
     "--compile-commands-dir=/Users/jrsarath/Documents/GitHub/Aura-Climate/build"
   ],
-  "idf.port": "/dev/tty.usbserial-110",
+  "idf.port": "/dev/tty.usbserial-210",
   "idf.flashType": "UART",
   "idf.currentSetup": "/Users/jrsarath/.espressif/v6.1/esp-idf"
 }
