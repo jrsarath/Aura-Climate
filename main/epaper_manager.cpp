@@ -104,6 +104,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
     // Right section: (scr_w - 175) to scr_w (175px wide)
     const int16_t right_section_x = 175;
     const int16_t right_section_w = scr_w - 175;
+    (void)right_section_w;
     
     /**
      * @brief LEFT SECTION: TEMP 
@@ -199,7 +200,8 @@ static void epaper_update_internal(const epaper_update_t* data) {
     uint16_t aqi_label_w, aqi_label_h;
     display.getTextBounds(line, 0, 0, &aqi_label_x_off, &aqi_label_y_off, &aqi_label_w, &aqi_label_h);
     // Label position (left + top of right section)
-    int16_t aqi_label_x = right_section_x + padding;
+    const int16_t right_pad_left = 14;
+    int16_t aqi_label_x = right_section_x + right_pad_left;
     int16_t aqi_label_baseline_y = padding - aqi_label_y_off;
     // Draw label
     display.setCursor(aqi_label_x, aqi_label_baseline_y);
@@ -237,13 +239,15 @@ static void epaper_update_internal(const epaper_update_t* data) {
     int16_t aqi_value_bottom_px = aqi_value_top_px + aqi_value_h;         // bottom of AQI text box
     // Start Y for the grid (a bit below AQI text)
     const int16_t grid_top = aqi_value_bottom_px + 18;
-    // Inner area inside right section (respect padding on left/right)
-    const int16_t right_inner_x = right_section_x + padding;
-    const int16_t right_inner_w = right_section_w - 2 * padding;
-    const int16_t col_gap = 12;
-    const int16_t col_w   = (right_inner_w - col_gap) / 2;
-    const int16_t col_left_x  = right_inner_x;
-    const int16_t col_right_x = right_inner_x + col_w + col_gap;
+    // Inner area inside right section:
+    // Column 1 starts 14px to the right of the vertical divider line (x = 175)
+    const int16_t col_left_x  = right_section_x + right_pad_left; // 189
+    // Width allocated for column 1 to accommodate 6-char size-2 strings (e.g. "400ppm")
+    const int16_t col_1_w     = 112;
+    // Visible gap between the end of column 1 and start of column 2
+    const int16_t col_gap     = 18;
+    // Column 2 begins after column 1 + gap
+    const int16_t col_right_x = col_left_x + col_1_w + col_gap;  // 319
     // Vertical spacing between first and second row
     const int16_t row_gap = 18;  // between top value and next label
 
@@ -311,9 +315,9 @@ static void epaper_update_internal(const epaper_update_t* data) {
     }
 
     // For second row, compute a baseline Y just under the first row’s values.
-    // We can use HUM value metrics as reference:
-    int16_t first_row_val_top    = grid_top + /* lbl_h */ 10 + 4; // approx; or reuse from HUM calc
-    int16_t second_row_label_top = first_row_val_top + 20 + row_gap;
+    // At textSize 2, label_h is ~10px and val_h is ~22px:
+    int16_t first_row_val_top    = grid_top + 10 + 4;
+    int16_t second_row_label_top = first_row_val_top + 22 + row_gap;
 
     // eCO2
     {
