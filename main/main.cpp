@@ -209,6 +209,14 @@ extern "C" void app_main() {
     }
     air_quality_endpoint_id = endpoint::get_id(air_quality_endpoint);
     ESP_LOGI(TAG, "AQI endpoint created with ID %d", air_quality_endpoint_id);
+
+    cluster_t *aq_cluster = cluster::get(air_quality_endpoint, chip::app::Clusters::AirQuality::Id);
+    if (aq_cluster) {
+        cluster::air_quality::feature::fair::add(aq_cluster);
+        cluster::air_quality::feature::moderate::add(aq_cluster);
+        cluster::air_quality::feature::very_poor::add(aq_cluster);
+        cluster::air_quality::feature::extremely_poor::add(aq_cluster);
+    }
     
     #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
         // Set OpenThread platform config

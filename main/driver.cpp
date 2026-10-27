@@ -9,7 +9,8 @@
 #include <button_gpio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
-#include <app/clusters/air-quality-server/air-quality-server.h>
+#include <app/clusters/air-quality-server/AirQualityCluster.h>
+#include <data_model_provider/esp_matter_data_model_provider.h>
 #include <app/util/attribute-storage.h>
 #include <lib/support/BitMask.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -184,9 +185,7 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         float humidity = sht->getHumidity();
         
         // Update temperature values
-        esp_matter_attr_val_t temperature_value = esp_matter_invalid(NULL);
-        temperature_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_INT16;
-        temperature_value.val.i16 = static_cast<int16_t>(temp * 100);
+        esp_matter_attr_val_t temperature_value = esp_matter_nullable_int16(static_cast<int16_t>(temp * 100));
         ESP_LOGI(TAG, "Temperature changed: %.2f°C (raw: %d) - updating Matter", temp, temperature_value.val.i16);
         esp_matter::attribute::update(temperature_endpoint_id, 
                                     TemperatureMeasurement::Id, 
@@ -194,9 +193,7 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
                                     &temperature_value);
 
         // Update humidity values
-        esp_matter_attr_val_t humidity_value = esp_matter_invalid(NULL);
-        humidity_value.type = esp_matter_val_type_t::ESP_MATTER_VAL_TYPE_UINT16;
-        humidity_value.val.u16 = static_cast<uint16_t>(humidity * 100);
+        esp_matter_attr_val_t humidity_value = esp_matter_nullable_uint16(static_cast<uint16_t>(humidity * 100));
         ESP_LOGI(TAG, "Humidity changed: %.2f%% (raw: %u) - updating Matter", humidity, humidity_value.val.u16);
         esp_matter::attribute::update(humidity_endpoint_id, 
                                     RelativeHumidityMeasurement::Id, 
@@ -223,11 +220,18 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
         ESP_LOGI(TAG, "Air quality changed: AQI %u (air quality: %d, TVOC: %u ppb, eCO2: %u ppm) - updating Matter",
                 aqi, static_cast<uint8_t>(airQuality), tvoc, co2);
         
-        esp_matter_attr_val_t air_quality_value = esp_matter_enum8(static_cast<uint8_t>(airQuality));
-        esp_matter::attribute::update(air_quality_endpoint_id,
-                                      AirQuality::Id,
-                                      AirQuality::Attributes::AirQuality::Id,
-                                      &air_quality_value);
+        chip::DeviceLayer::StackLock lock;
+        auto *server_cluster = esp_matter::data_model::provider::get_instance().registry().Get(
+            chip::app::ConcreteClusterPath(air_quality_endpoint_id, chip::app::Clusters::AirQuality::Id));
+        if (server_cluster) {
+            auto *aq_cluster = static_cast<chip::app::Clusters::AirQualityCluster*>(server_cluster);
+            auto status = aq_cluster->SetAirQuality(airQuality);
+            if (status != chip::Protocols::InteractionModel::Status::Success) {
+                ESP_LOGE(TAG, "Failed to set AirQuality: %d", static_cast<int>(status));
+            }
+        } else {
+            ESP_LOGE(TAG, "Air Quality cluster not found in registry for endpoint %u", air_quality_endpoint_id);
+        }
         
         ens->markUpdated();
         ens_updated = true;
