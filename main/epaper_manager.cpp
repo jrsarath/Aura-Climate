@@ -32,6 +32,7 @@ typedef struct {
     uint16_t tvoc;
     uint16_t co2;
     bool matter_connected;
+    bool ens_warming_up;
 } epaper_update_t;
 
 /**
@@ -197,7 +198,9 @@ static void epaper_update_internal(const epaper_update_t* data) {
     display.setTextSize(3);
     const char* aqi_text;
     uint8_t aqi_val = data->aqi;
-    if (aqi_val == 1) {
+    if (data->ens_warming_up) {
+        aqi_text = "WARM";
+    } else if (aqi_val == 1) {
         aqi_text = "GOOD";
     } else if (aqi_val == 2) {
         aqi_text = "MDRT";  // Moderate abbreviated
@@ -457,13 +460,15 @@ void epaper_request_update(const SensorManager* sensor_manager, bool matter_conn
     const SHT40Sensor* sht  = sensor_manager->getSHT40Sensor();
     const ENS160Sensor* ens = sensor_manager->getENS160Sensor();
     
+    bool ens_warmup = (ens && ens->isInitialized() && ens->isWarmingUp());
     epaper_update_t update_data = {
-        .temperature = (sht && sht->isInitialized()) ? sht->getTemperature() : NAN,
-        .humidity = (sht && sht->isInitialized()) ? sht->getHumidity() : NAN,
-        .aqi = (uint16_t)((ens && ens->isInitialized()) ? ens->getAQI() : 0),
-        .tvoc = (uint16_t)((ens && ens->isInitialized()) ? ens->getTVOCppb() : 0),
-        .co2 = (uint16_t)((ens && ens->isInitialized()) ? ens->getECO2ppm() : 0),
-        .matter_connected = matter_connected
+        .temperature = (sht && sht->isInitialized() && sht->validateReading()) ? sht->getTemperature() : NAN,
+        .humidity = (sht && sht->isInitialized() && sht->validateReading()) ? sht->getHumidity() : NAN,
+        .aqi = (uint16_t)((ens && ens->isInitialized() && ens->validateReading()) ? ens->getAQI() : 0),
+        .tvoc = (uint16_t)((ens && ens->isInitialized() && ens->validateReading()) ? ens->getTVOCppb() : 0),
+        .co2 = (uint16_t)((ens && ens->isInitialized() && ens->validateReading()) ? ens->getECO2ppm() : 0),
+        .matter_connected = matter_connected,
+        .ens_warming_up = ens_warmup
     };
     
     // Send to queue (overwrite if queue is full to always have latest data)
@@ -494,13 +499,15 @@ void epaper_update_display(const SensorManager* sensor_manager, bool matter_conn
     const SHT40Sensor* sht = sensor_manager->getSHT40Sensor();
     const ENS160Sensor* ens = sensor_manager->getENS160Sensor();
     
+    bool ens_warmup = (ens && ens->isInitialized() && ens->isWarmingUp());
     epaper_update_t update_data = {
-        .temperature = (sht && sht->isInitialized()) ? sht->getTemperature() : NAN,
-        .humidity = (sht && sht->isInitialized()) ? sht->getHumidity() : NAN,
-        .aqi = (uint16_t)((ens && ens->isInitialized()) ? ens->getAQI() : 0),
-        .tvoc = (uint16_t)((ens && ens->isInitialized()) ? ens->getTVOCppb() : 0),
-        .co2 = (uint16_t)((ens && ens->isInitialized()) ? ens->getECO2ppm() : 0),
-        .matter_connected = matter_connected
+        .temperature = (sht && sht->isInitialized() && sht->validateReading()) ? sht->getTemperature() : NAN,
+        .humidity = (sht && sht->isInitialized() && sht->validateReading()) ? sht->getHumidity() : NAN,
+        .aqi = (uint16_t)((ens && ens->isInitialized() && ens->validateReading()) ? ens->getAQI() : 0),
+        .tvoc = (uint16_t)((ens && ens->isInitialized() && ens->validateReading()) ? ens->getTVOCppb() : 0),
+        .co2 = (uint16_t)((ens && ens->isInitialized() && ens->validateReading()) ? ens->getECO2ppm() : 0),
+        .matter_connected = matter_connected,
+        .ens_warming_up = ens_warmup
     };
     
     // Use the shared internal function

@@ -133,11 +133,21 @@ esp_err_t SHT40Sensor::read() {
 
     float temp = 0.0f;
     float rh   = 0.0f;
+    esp_err_t ret = ESP_FAIL;
 
-    esp_err_t ret = sht4x_get_measurement(sht_handle, &temp, &rh);
+    // Retry up to SHT4X_ERROR_RETRY_COUNT times with proper delay between attempts
+    for (int attempt = 1; attempt <= SHT4X_ERROR_RETRY_COUNT; attempt++) {
+        ret = sht4x_get_measurement(sht_handle, &temp, &rh);
+        if (ret == ESP_OK) {
+            break;
+        }
+        ESP_LOGD(TAG, "%s read attempt %d failed: %s, retrying...", sensor_name, attempt, esp_err_to_name(ret));
+        vTaskDelay(pdMS_TO_TICKS(50) < 2 ? 2 : pdMS_TO_TICKS(50));
+    }
+
     if (ret != ESP_OK) {
         error_count++;
-        ESP_LOGW(TAG, "%s read failed: %s", sensor_name, esp_err_to_name(ret));
+        ESP_LOGW(TAG, "%s read failed after %d attempts: %s", sensor_name, SHT4X_ERROR_RETRY_COUNT, esp_err_to_name(ret));
         return ret;
     }
 
@@ -198,6 +208,7 @@ void SHT40Sensor::markUpdated() const {
  */
 ENS160Sensor::ENS160Sensor()
     : SensorBase("ENS160"), aqi(0), tvoc_ppb(0), eco2_ppm(0),
+      validity_state(ENS160_VALFLAG_INVALID_OUTPUT),
       last_updated_aqi(0), last_updated_tvoc_ppb(0), last_updated_eco2_ppm(0), ens_handle(nullptr) {}
 
 /**
@@ -209,6 +220,28 @@ ENS160Sensor::~ENS160Sensor() {
         ens160_delete(ens_handle);
         ens_handle = nullptr;
     }
+}
+
+/**
+ * @brief Set temperature and humidity compensation registers on ENS160.
+ * 
+ * @param temperature Ambient temperature in degrees Celsius
+ * @param humidity Ambient relative humidity in percent
+ * @return esp_err_t ESP_OK on success, error code otherwise.
+ */
+esp_err_t ENS160Sensor::setCompensation(float temperature, float humidity) {
+    if (!initialized || !ens_handle) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (temperature < -40.0f || temperature > 125.0f || humidity < 0.0f || humidity > 100.0f) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    esp_err_t ret = ens160_set_compensation_registers(ens_handle, temperature, humidity);
+    if (ret != ESP_OK) {
+        ESP_LOGD(TAG, "%s compensation write failed (%.1f°C, %.1f%%): %s",
+                 sensor_name, temperature, humidity, esp_err_to_name(ret));
+    }
+    return ret;
 }
 
 /**
@@ -236,6 +269,7 @@ esp_err_t ENS160Sensor::initialize() {
 
     ens_handle  = dev_hdl;
     initialized = true;
+    validity_state = ENS160_VALFLAG_INVALID_OUTPUT;
     return ESP_OK;
 }
 
@@ -258,10 +292,24 @@ esp_err_t ENS160Sensor::read() {
         return ret;
     }
 
-    if (dev_flag == ENS160_VALFLAG_WARMUP || dev_flag == ENS160_VALFLAG_INITIAL_STARTUP) {
+    validity_state = dev_flag;
+
+    // Handle normal warm-up phase (first 3 minutes after power-on)
+    if (dev_flag == ENS160_VALFLAG_WARMUP) {
+        error_count = 0; // Warmup is expected normal hardware behavior, not an error
+        ESP_LOGI(TAG, "%s warming up (3-minute stabilization phase)", sensor_name);
+        return ESP_OK;
+    }
+
+    // Handle invalid output state
+    if (dev_flag == ENS160_VALFLAG_INVALID_OUTPUT) {
         error_count++;
-        ESP_LOGW(TAG, "%s warming up (state=%u)", sensor_name, static_cast<unsigned>(dev_flag));
-        return ESP_ERR_INVALID_STATE;
+        ESP_LOGW(TAG, "%s reported invalid output status", sensor_name);
+        return ESP_FAIL;
+    }
+
+    if (dev_flag == ENS160_VALFLAG_INITIAL_STARTUP) {
+        ESP_LOGI(TAG, "%s in initial start-up phase (1-hour burn-in)", sensor_name);
     }
 
     ens160_air_quality_data_t aq_data = {};
@@ -277,15 +325,16 @@ esp_err_t ENS160Sensor::read() {
     if (aq_data.uba_aqi >= ENS160_MIN_AQI && aq_data.uba_aqi <= ENS160_MAX_AQI &&
         aq_data.eco2 >= ENS160_MIN_ECO2_PPM && aq_data.eco2 <= ENS160_MAX_ECO2_PPM) {
 
-        aqi       = static_cast<uint8_t>(aq_data.uba_aqi);
-        tvoc_ppb  = aq_data.tvoc;
-        eco2_ppm  = aq_data.eco2;
+        aqi         = static_cast<uint8_t>(aq_data.uba_aqi);
+        tvoc_ppb    = aq_data.tvoc;
+        eco2_ppm    = aq_data.eco2;
         error_count = 0;
         return ESP_OK;
     }
 
     error_count++;
-    ESP_LOGW(TAG, "%s reading out of range", sensor_name);
+    ESP_LOGW(TAG, "%s reading out of range (AQI=%u, eCO2=%u, TVOC=%u)",
+             sensor_name, aq_data.uba_aqi, aq_data.eco2, aq_data.tvoc);
     return ESP_FAIL;
 }
 
@@ -294,10 +343,11 @@ esp_err_t ENS160Sensor::read() {
  * 
  */
 void ENS160Sensor::reset() {
-    aqi       = 0;
-    tvoc_ppb  = 0;
-    eco2_ppm  = 0;
-    error_count = 0;
+    aqi            = 0;
+    tvoc_ppb       = 0;
+    eco2_ppm       = 0;
+    validity_state = ENS160_VALFLAG_INVALID_OUTPUT;
+    error_count    = 0;
 }
 
 /**
@@ -306,6 +356,9 @@ void ENS160Sensor::reset() {
  * @return true if readings are valid, false otherwise.
  */
 bool ENS160Sensor::validateReading() const {
+    if (validity_state == ENS160_VALFLAG_WARMUP || validity_state == ENS160_VALFLAG_INVALID_OUTPUT) {
+        return false;
+    }
     return aqi      >= ENS160_MIN_AQI && aqi      <= ENS160_MAX_AQI &&
            eco2_ppm >= ENS160_MIN_ECO2_PPM && eco2_ppm <= ENS160_MAX_ECO2_PPM;
 }
@@ -405,6 +458,13 @@ void SensorManager::readingTask(void* parameters) {
             sht_ret = manager->sht_sensor->read();
         }
         if (manager->ens_sensor) {
+            // Apply real-time ambient temperature and humidity compensation to ENS160
+            if (sht_ret == ESP_OK && manager->sht_sensor->validateReading()) {
+                manager->ens_sensor->setCompensation(
+                    manager->sht_sensor->getTemperature(),
+                    manager->sht_sensor->getHumidity()
+                );
+            }
             ens_ret = manager->ens_sensor->read();
         }
 
@@ -421,6 +481,10 @@ void SensorManager::readingTask(void* parameters) {
                      manager->ens_sensor->getAQI(),
                      manager->ens_sensor->getTVOCppb(),
                      manager->ens_sensor->getECO2ppm());
+        } else if (manager->ens_sensor && manager->ens_sensor->isWarmingUp()) {
+            ESP_LOGI(TAG, "ENS160 sensor is warming up (waiting for stable readings)");
+        } else if (manager->ens_sensor && manager->ens_sensor->isInitialStartup()) {
+            ESP_LOGI(TAG, "ENS160 sensor is in initial start-up phase (1-hour burn-in)");
         } else {
             ESP_LOGW(TAG, "Failed to read ENS160 sensor or invalid reading");
         }

@@ -166,8 +166,6 @@ esp_err_t driver_air_quality_init(uint16_t endpoint_id) {
  * @param sensor_manager Pointer to the SensorManager instance
  */
 void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
-    static uint32_t update_count = 0;
-    static const uint32_t EPAPER_UPDATE_INTERVAL = CONFIG_EPD_UPDATE_INTERVAL;
     static bool sht_updated = false;
     static bool ens_updated = false;
     
@@ -241,14 +239,6 @@ void update_matter_with_sensor_values(const SensorManager* sensor_manager) {
                      ens->getAQI(), ens->getTVOCppb(), ens->getECO2ppm());
             ens_updated = false;
         }
-    }
-    
-    // Update e-paper display periodically (independent of Matter updates)
-    update_count++;
-    if (update_count >= EPAPER_UPDATE_INTERVAL) {
-        update_count = 0;
-        ESP_LOGI(TAG, "Updating e-paper display (interval: %lu seconds)", EPAPER_UPDATE_INTERVAL);
-        epaper_update_display(sensor_manager);
     }
 }
 

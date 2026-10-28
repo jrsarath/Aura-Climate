@@ -85,13 +85,14 @@ class SHT40Sensor : public SensorBase {
  */
 class ENS160Sensor : public SensorBase {
     private:
-        uint8_t         aqi;
-        uint16_t        tvoc_ppb;
-        uint16_t        eco2_ppm;
+        uint8_t                 aqi;
+        uint16_t                tvoc_ppb;
+        uint16_t                eco2_ppm;
+        ens160_validity_flags_t validity_state;
         mutable uint8_t         last_updated_aqi;
         mutable uint16_t        last_updated_tvoc_ppb;
         mutable uint16_t        last_updated_eco2_ppm;
-        ens160_handle_t ens_handle;
+        ens160_handle_t         ens_handle;
 
     public:
         ENS160Sensor();
@@ -101,12 +102,16 @@ class ENS160Sensor : public SensorBase {
         esp_err_t read() override;
         void      reset() override;
 
-        uint8_t  getAQI()      const { return aqi; }
-        uint16_t getTVOCppb()  const { return tvoc_ppb; }
-        uint16_t getECO2ppm()  const { return eco2_ppm; }
-        bool     validateReading() const;
-        bool     hasChanged() const;
-        void     markUpdated() const;
+        uint8_t                 getAQI()           const { return aqi; }
+        uint16_t                getTVOCppb()       const { return tvoc_ppb; }
+        uint16_t                getECO2ppm()       const { return eco2_ppm; }
+        ens160_validity_flags_t getValidityState() const { return validity_state; }
+        bool                    isWarmingUp()      const { return validity_state == ENS160_VALFLAG_WARMUP; }
+        bool                    isInitialStartup() const { return validity_state == ENS160_VALFLAG_INITIAL_STARTUP; }
+        bool                    validateReading()  const;
+        bool                    hasChanged()       const;
+        void                    markUpdated()      const;
+        esp_err_t               setCompensation(float temperature, float humidity);
 };
 
 /**
