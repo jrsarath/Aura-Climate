@@ -10,7 +10,8 @@
 #include <freertos/queue.h>
 #include "goodisplay/gdeq037T31.h"
 #include "epaper_manager.hpp"
-#include "Seven_Segment9pt7b.h"
+#include "Orbitron_Medium10pt7b.h"
+#include "Orbitron_Medium14pt7b.h"
 
 
 EpdSpi io;
@@ -22,9 +23,6 @@ static bool epd_initialized = false;
 // Task and queue for non-blocking updates
 static TaskHandle_t epaper_task_handle = NULL;
 static QueueHandle_t epaper_queue = NULL;
-
-// Track last display refresh time (microseconds)
-static uint64_t last_refresh_time_us = 0;
 
 // Display update request structure
 typedef struct {
@@ -43,7 +41,7 @@ typedef struct {
  * @param buffer Output buffer for the formatted string
  * @param buffer_size Size of the output buffer
  */
-static void format_time_ago(uint64_t elapsed_ms, char* buffer, size_t buffer_size) {
+[[maybe_unused]] static void format_time_ago(uint64_t elapsed_ms, char* buffer, size_t buffer_size) {
     if (!buffer || buffer_size < 10) {
         if (buffer && buffer_size > 0) buffer[0] = '\0';
         return;
@@ -89,6 +87,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
 
     display.fillScreen(EPD_WHITE);
     display.setTextColor(EPD_BLACK);
+    display.setFont(&Orbitron_Medium10pt7b);
 
     const int16_t scr_w = display.width();   // 416
     const int16_t scr_h = display.height();  // 240
@@ -110,72 +109,58 @@ static void epaper_update_internal(const epaper_update_t* data) {
      * 
      */
 
-    // Time (top right of left section) - Display "last refreshed" time
+    // Matter Status (top right of left section)
     display.setTextSize(1);
-    
-    // Calculate elapsed time since last refresh
-    uint64_t current_time_us = esp_timer_get_time();
-    uint64_t elapsed_us = current_time_us - last_refresh_time_us;
-    uint64_t elapsed_ms = elapsed_us / 1000;
-    
-    format_time_ago(elapsed_ms, line, sizeof(line));
+    const char* matter_status_text = data->matter_connected ? "CONNECTED" : "DISCONN";
+    display.getTextBounds(matter_status_text, 0, 0, &x, &y, &w, &h);
+    int16_t matter_status_x = (left_section_x + left_section_w) - w - padding;
+    int16_t matter_status_y = padding - y;
 
-    display.getTextBounds(line, 0, 0, &x, &y, &w, &h);
-    int16_t time_x = (left_section_x + left_section_w) - w - padding;
-    int16_t time_y = padding - y;
+    display.setCursor(matter_status_x, matter_status_y);
+    display.print(matter_status_text);
 
-    display.setCursor(time_x, time_y);
-    display.print(line);
-
-    // CENTER: TEMP label and value (centered in left section)
+    // CENTER: TEMP label and value (centered in left section, shifted up slightly)
+    display.setFont(&Orbitron_Medium10pt7b);
     display.setTextSize(1);
-    snprintf(line, sizeof(line), "TEMP");
-    // Measure label
+    const char* temp_label = "TEMP";
     int16_t label_x_off, label_y_off;
     uint16_t label_w, label_h;
-    display.getTextBounds(line, 0, 0, &label_x_off, &label_y_off, &label_w, &label_h);
-    // Measure value
-    display.setTextSize(5);
+    display.getTextBounds(temp_label, 0, 0, &label_x_off, &label_y_off, &label_w, &label_h);
+
+    char temp_val_str[16];
     if (isnan(data->temperature)) {
-        snprintf(line, sizeof(line), "--C");
+        snprintf(temp_val_str, sizeof(temp_val_str), "--°C");
     } else {
-        snprintf(line, sizeof(line), "%.0fC", data->temperature);
+        snprintf(temp_val_str, sizeof(temp_val_str), "%.0f°C", data->temperature);
     }
+    display.setTextSize(3);
     int16_t value_x_off, value_y_off;
     uint16_t value_w, value_h;
-    display.getTextBounds(line, 0, 0, &value_x_off, &value_y_off, &value_w, &value_h);
-    // Vertical layout
-    const int16_t gap = 8; // vertical gap between label and value
+    display.getTextBounds(temp_val_str, 0, 0, &value_x_off, &value_y_off, &value_w, &value_h);
+
+    // Vertical layout (shifted up by 12px for better visual balance)
+    const int16_t gap = 8;
     int16_t block_h   = label_h + gap + value_h;
-    int16_t block_top = (scr_h - block_h) / 2;   // top of the whole TEMP block
+    int16_t block_top = ((scr_h - block_h) / 2) - 4;
+
+    // Value and label X positions (temp label left-aligned with temp value)
     int16_t temp_value_x = left_section_x + (left_section_w - value_w) / 2;
     int16_t temp_label_x = temp_value_x;
-    int16_t temp_label_baseline_y = block_top - label_y_off;   // top = baseline + y_off
-    int16_t value_top = block_top + label_h + gap;
-    int16_t temp_value_baseline_y = value_top - value_y_off;
+
     // Draw label
     display.setTextSize(1);
-    snprintf(line, sizeof(line), "TEMP");
+    int16_t temp_label_baseline_y = block_top - label_y_off;
     display.setCursor(temp_label_x, temp_label_baseline_y);
-    display.print(line);
-    display.setTextSize(5);
-    // Draw value
-    if (isnan(data->temperature)) {
-        snprintf(line, sizeof(line), "--C");
-    } else {
-        snprintf(line, sizeof(line), "%.0fC", data->temperature);
-    }
-    display.setCursor(temp_value_x, temp_value_baseline_y);
-    display.print(line);
+    display.print(temp_label);
 
-    // Product Name (bottom left)
-    display.setTextSize(1);
-    snprintf(line, sizeof(line), "AURA CLIMATE");
-    display.getTextBounds(line, 0, 0, &x, &y, &w, &h);
-    display.setCursor(padding, scr_h - padding - h - y);
-    display.print(line);
+    // Draw value
+    display.setTextSize(3);
+    int16_t temp_value_baseline_y = (block_top + label_h + gap) - value_y_off;
+    display.setCursor(temp_value_x, temp_value_baseline_y);
+    display.print(temp_val_str);
 
     // Version number (bottom right of left section)
+    display.setTextSize(1);
     const esp_app_desc_t* app_desc = esp_app_get_description();
     snprintf(line, sizeof(line), "%s", app_desc->version);
     display.getTextBounds(line, 0, 0, &x, &y, &w, &h);
@@ -205,7 +190,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
     display.setCursor(aqi_label_x, aqi_label_baseline_y);
     display.print(line);
     // AQI value as text (Good, Moderate, etc.)
-    display.setTextSize(5);
+    display.setTextSize(3);
     const char* aqi_text;
     uint8_t aqi_val = data->aqi;
     if (aqi_val == 1) {
@@ -236,7 +221,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
     int16_t aqi_value_top_px    = aqi_value_baseline_y + aqi_value_y_off; // top of AQI text box
     int16_t aqi_value_bottom_px = aqi_value_top_px + aqi_value_h;         // bottom of AQI text box
     // Start Y for the grid (a bit below AQI text)
-    const int16_t grid_top = aqi_value_bottom_px + 18;
+    const int16_t grid_top = aqi_value_bottom_px + 36;
     // Inner area inside right section (respect padding on left/right)
     const int16_t right_inner_x = right_section_x + padding;
     const int16_t right_inner_w = right_section_w - 2 * padding;
@@ -245,11 +230,12 @@ static void epaper_update_internal(const epaper_update_t* data) {
     const int16_t col_left_x  = right_inner_x;
     const int16_t col_right_x = right_inner_x + col_w + col_gap;
     // Vertical spacing between first and second row
-    const int16_t row_gap = 18;  // between top value and next label
+    const int16_t row_gap = 20;  // between top value and next label
 
     
     // HUM
     {
+        display.setFont(&Orbitron_Medium10pt7b);
         display.setTextSize(1);
         snprintf(line, sizeof(line), "HUM");
         int16_t lbl_x_off, lbl_y_off;
@@ -261,7 +247,8 @@ static void epaper_update_internal(const epaper_update_t* data) {
         display.setCursor(hum_label_x, hum_label_baseline_y);
         display.print(line);
 
-        display.setTextSize(2);
+        display.setFont(&Orbitron_Medium14pt7b);
+        display.setTextSize(1);
         if (isnan(data->humidity)) {
             snprintf(line, sizeof(line), "--.-%%");
         } else {
@@ -278,9 +265,10 @@ static void epaper_update_internal(const epaper_update_t* data) {
         display.setCursor(hum_value_x, hum_value_baseline_y);
         display.print(line);
     }
-
+    
     // TVOC
     {
+        display.setFont(&Orbitron_Medium10pt7b);
         display.setTextSize(1);
         snprintf(line, sizeof(line), "TVOC");
         int16_t lbl_x_off, lbl_y_off;
@@ -292,7 +280,8 @@ static void epaper_update_internal(const epaper_update_t* data) {
         display.setCursor(tvoc_label_x, tvoc_label_baseline_y);
         display.print(line);
 
-        display.setTextSize(2);
+        display.setFont(&Orbitron_Medium14pt7b);
+        display.setTextSize(1);
         if (data->tvoc == 0) {
             snprintf(line, sizeof(line), "--ppb");
         } else {
@@ -317,6 +306,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
 
     // eCO2
     {
+        display.setFont(&Orbitron_Medium10pt7b);
         display.setTextSize(1);
         snprintf(line, sizeof(line), "ECO2");
         int16_t lbl_x_off, lbl_y_off;
@@ -328,7 +318,8 @@ static void epaper_update_internal(const epaper_update_t* data) {
         display.setCursor(eco2_label_x, eco2_label_baseline_y);
         display.print(line);
 
-        display.setTextSize(2);
+        display.setFont(&Orbitron_Medium14pt7b);
+        display.setTextSize(1);
         if (data->co2 == 0) {
             snprintf(line, sizeof(line), "--ppm");
         } else {
@@ -346,35 +337,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
         display.print(line);
     }
 
-    // MATTER / CONNECTED
-    {
-        display.setTextSize(1);
-        snprintf(line, sizeof(line), "MATTER");
-        int16_t lbl_x_off, lbl_y_off;
-        uint16_t lbl_w, lbl_h;
-        display.getTextBounds(line, 0, 0, &lbl_x_off, &lbl_y_off, &lbl_w, &lbl_h);
-
-        int16_t matter_label_x = col_right_x;
-        int16_t matter_label_baseline_y = second_row_label_top - lbl_y_off;
-        display.setCursor(matter_label_x, matter_label_baseline_y);
-        display.print(line);
-
-        display.setTextSize(2);
-        const char* matter_text = data->matter_connected ? "CONN" : "DISC";
-
-        int16_t val_x_off, val_y_off;
-        uint16_t val_w, val_h;
-        display.getTextBounds(matter_text, 0, 0, &val_x_off, &val_y_off, &val_w, &val_h);
-
-        int16_t matter_value_top = second_row_label_top + lbl_h + 4;
-        int16_t matter_value_x   = col_right_x;
-        int16_t matter_value_baseline_y = matter_value_top - val_y_off;
-        display.setCursor(matter_value_x, matter_value_baseline_y);
-        display.print(matter_text);
-    }
-
     // Update the last refresh timestamp before pushing to display
-    last_refresh_time_us = esp_timer_get_time();
     display.update();
 }
 
@@ -442,7 +405,7 @@ esp_err_t epaper_init(void) {
     display.setRotation(3);
     display.fast_mode = true;
 
-    display.setFont(&Seven_Segment9pt7b);
+    display.setFont(&Orbitron_Medium10pt7b);
     display.fillScreen(EPD_WHITE);
     display.setTextColor(EPD_BLACK);
 
@@ -619,7 +582,8 @@ void epaper_display_splash(void) {
     const char *line2 = "BY 48 STUDIOS";
 
     // Line 1: size 3 – compute width/height with current font
-    display.setTextSize(3);
+    display.setFont(&Orbitron_Medium10pt7b);
+    display.setTextSize(2);
     int16_t x1, y1;
     uint16_t w1, h1;
     display.getTextBounds(line1, 0, 0, &x1, &y1, &w1, &h1);
@@ -629,7 +593,7 @@ void epaper_display_splash(void) {
     display.print(line1);
 
     // Line 2: size 2 – recompute bounds after changing size
-    display.setTextSize(2);
+    display.setTextSize(1);
     int16_t x2, y2;
     uint16_t w2, h2;
     display.getTextBounds(line2, 0, 0, &x2, &y2, &w2, &h2);
