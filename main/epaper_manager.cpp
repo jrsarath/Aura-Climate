@@ -156,11 +156,12 @@ static void epaper_update_internal(const epaper_update_t* data) {
     display.print(temp_val_str);
 
 
-    // Product Name (bottom left)
+    // Version label (bottom left)
     display.setTextSize(1);
     snprintf(line, sizeof(line), "VER");
     display.getTextBounds(line, 0, 0, &x, &y, &w, &h);
-    display.setCursor(padding, scr_h - padding - h - y);
+    const int16_t bottom_baseline_y = scr_h - padding - h - y;
+    display.setCursor(padding, bottom_baseline_y);
     display.print(line);
     // Version number (bottom right of left section)
     display.setTextSize(1);
@@ -168,7 +169,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
     snprintf(line, sizeof(line), "%s", app_desc->version);
     display.getTextBounds(line, 0, 0, &x, &y, &w, &h);
     int16_t version_x = (left_section_x + left_section_w) - w - padding;
-    display.setCursor(version_x, scr_h - padding - h - y);
+    display.setCursor(version_x, bottom_baseline_y);
     display.print(line);
 
     /**
@@ -220,22 +221,21 @@ static void epaper_update_internal(const epaper_update_t* data) {
     display.setCursor(aqi_value_x, aqi_value_baseline_y);
     display.print(aqi_text);
 
-    // Compute where AQI value ends, so we can start stacked rows below it
-    int16_t aqi_value_top_px    = aqi_value_baseline_y + aqi_value_y_off; // top of AQI text box
-    int16_t aqi_value_bottom_px = aqi_value_top_px + aqi_value_h;         // bottom of AQI text box
-
     // Inner area inside right section (respect padding on left/right)
     const int16_t right_inner_x = right_section_x + padding;
     const int16_t right_inner_w = right_section_w - 2 * padding;
     const int16_t row_right_x   = right_inner_x + right_inner_w;
 
     // Stacked row baseline positions for HUM, TVOC, and ECO2
-    const int16_t rows_start_y = aqi_value_bottom_px + 44;
-    const int16_t row_spacing  = 40;
+    // Bottom row (ECO2) is aligned at the bottom with VER and version number on the left
+    const int16_t row_spacing     = 42;
+    const int16_t eco2_baseline_y = bottom_baseline_y;
+    const int16_t tvoc_baseline_y = eco2_baseline_y - row_spacing;
+    const int16_t hum_baseline_y  = tvoc_baseline_y - row_spacing;
 
     // 1. HUM Row
     {
-        const int16_t row_baseline_y = rows_start_y;
+        const int16_t row_baseline_y = hum_baseline_y;
 
         // Label (left-aligned)
         display.setFont(&Orbitron_Medium10pt7b);
@@ -261,7 +261,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
 
     // 2. TVOC Row
     {
-        const int16_t row_baseline_y = rows_start_y + row_spacing;
+        const int16_t row_baseline_y = tvoc_baseline_y;
 
         // Label (left-aligned)
         display.setFont(&Orbitron_Medium10pt7b);
@@ -287,7 +287,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
 
     // 3. ECO2 Row
     {
-        const int16_t row_baseline_y = rows_start_y + 2 * row_spacing;
+        const int16_t row_baseline_y = eco2_baseline_y;
 
         // Label (left-aligned)
         display.setFont(&Orbitron_Medium10pt7b);
