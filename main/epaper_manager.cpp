@@ -224,7 +224,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
     int16_t aqi_value_top_px    = aqi_value_baseline_y + aqi_value_y_off; // top of AQI text box
     int16_t aqi_value_bottom_px = aqi_value_top_px + aqi_value_h;         // bottom of AQI text box
     // Start Y for the grid (a bit below AQI text)
-    const int16_t grid_top = aqi_value_bottom_px + 36;
+    const int16_t grid_top = aqi_value_bottom_px + 38;
     // Inner area inside right section (respect padding on left/right)
     const int16_t right_inner_x = right_section_x + padding;
     const int16_t right_inner_w = right_section_w - 2 * padding;
