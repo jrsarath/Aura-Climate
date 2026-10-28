@@ -137,28 +137,31 @@ static void epaper_update_internal(const epaper_update_t* data) {
     int16_t value_x_off, value_y_off;
     uint16_t value_w, value_h;
     display.getTextBounds(temp_val_str, 0, 0, &value_x_off, &value_y_off, &value_w, &value_h);
-
     // Vertical layout (shifted up by 12px for better visual balance)
     const int16_t gap = 8;
     int16_t block_h   = label_h + gap + value_h;
     int16_t block_top = ((scr_h - block_h) / 2) - 4;
-
     // Value and label X positions (temp label left-aligned with temp value)
     int16_t temp_value_x = left_section_x + (left_section_w - value_w) / 2;
     int16_t temp_label_x = temp_value_x;
-
-    // Draw label
+    // Draw Temp label
     display.setTextSize(1);
     int16_t temp_label_baseline_y = block_top - label_y_off;
     display.setCursor(temp_label_x, temp_label_baseline_y);
     display.print(temp_label);
-
-    // Draw value
+    // Draw Temp value
     display.setTextSize(3);
     int16_t temp_value_baseline_y = (block_top + label_h + gap) - value_y_off;
     display.setCursor(temp_value_x, temp_value_baseline_y);
     display.print(temp_val_str);
 
+
+    // Product Name (bottom left)
+    display.setTextSize(1);
+    snprintf(line, sizeof(line), "VER");
+    display.getTextBounds(line, 0, 0, &x, &y, &w, &h);
+    display.setCursor(padding, scr_h - padding - h - y);
+    display.print(line);
     // Version number (bottom right of left section)
     display.setTextSize(1);
     const esp_app_desc_t* app_desc = esp_app_get_description();
