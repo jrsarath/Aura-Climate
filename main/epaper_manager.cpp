@@ -199,7 +199,7 @@ static void epaper_update_internal(const epaper_update_t* data) {
     if (aqi_val == 1) {
         aqi_text = "GOOD";
     } else if (aqi_val == 2) {
-        aqi_text = "MODE";  // Moderate abbreviated
+        aqi_text = "MDRT";  // Moderate abbreviated
     } else if (aqi_val == 3) {
         aqi_text = "POOR";
     } else if (aqi_val == 4) {
@@ -220,36 +220,30 @@ static void epaper_update_internal(const epaper_update_t* data) {
     display.setCursor(aqi_value_x, aqi_value_baseline_y);
     display.print(aqi_text);
 
-    // Compute where AQI value ends, so we can start grid below it
+    // Compute where AQI value ends, so we can start stacked rows below it
     int16_t aqi_value_top_px    = aqi_value_baseline_y + aqi_value_y_off; // top of AQI text box
     int16_t aqi_value_bottom_px = aqi_value_top_px + aqi_value_h;         // bottom of AQI text box
-    // Start Y for the grid (a bit below AQI text)
-    const int16_t grid_top = aqi_value_bottom_px + 38;
+
     // Inner area inside right section (respect padding on left/right)
     const int16_t right_inner_x = right_section_x + padding;
     const int16_t right_inner_w = right_section_w - 2 * padding;
-    const int16_t col_gap = 12;
-    const int16_t col_w   = (right_inner_w - col_gap) / 2;
-    const int16_t col_left_x  = right_inner_x;
-    const int16_t col_right_x = right_inner_x + col_w + col_gap;
-    // Vertical spacing between first and second row
-    const int16_t row_gap = 20;  // between top value and next label
+    const int16_t row_right_x   = right_inner_x + right_inner_w;
 
-    
-    // HUM
+    // Stacked row baseline positions for HUM, TVOC, and ECO2
+    const int16_t rows_start_y = aqi_value_bottom_px + 44;
+    const int16_t row_spacing  = 40;
+
+    // 1. HUM Row
     {
+        const int16_t row_baseline_y = rows_start_y;
+
+        // Label (left-aligned)
         display.setFont(&Orbitron_Medium10pt7b);
         display.setTextSize(1);
-        snprintf(line, sizeof(line), "HUM");
-        int16_t lbl_x_off, lbl_y_off;
-        uint16_t lbl_w, lbl_h;
-        display.getTextBounds(line, 0, 0, &lbl_x_off, &lbl_y_off, &lbl_w, &lbl_h);
+        display.setCursor(right_inner_x, row_baseline_y);
+        display.print("HUM");
 
-        int16_t hum_label_x = col_left_x;
-        int16_t hum_label_baseline_y = grid_top - lbl_y_off;
-        display.setCursor(hum_label_x, hum_label_baseline_y);
-        display.print(line);
-
+        // Value (right-aligned)
         display.setFont(&Orbitron_Medium14pt7b);
         display.setTextSize(1);
         if (isnan(data->humidity)) {
@@ -257,32 +251,25 @@ static void epaper_update_internal(const epaper_update_t* data) {
         } else {
             snprintf(line, sizeof(line), "%.1f%%", data->humidity);
         }
-
         int16_t val_x_off, val_y_off;
         uint16_t val_w, val_h;
         display.getTextBounds(line, 0, 0, &val_x_off, &val_y_off, &val_w, &val_h);
-
-        int16_t hum_value_top = grid_top + lbl_h + 4; // small gap below label
-        int16_t hum_value_x   = col_left_x;
-        int16_t hum_value_baseline_y = hum_value_top - val_y_off;
-        display.setCursor(hum_value_x, hum_value_baseline_y);
+        int16_t val_x = row_right_x - val_w - val_x_off;
+        display.setCursor(val_x, row_baseline_y);
         display.print(line);
     }
-    
-    // TVOC
+
+    // 2. TVOC Row
     {
+        const int16_t row_baseline_y = rows_start_y + row_spacing;
+
+        // Label (left-aligned)
         display.setFont(&Orbitron_Medium10pt7b);
         display.setTextSize(1);
-        snprintf(line, sizeof(line), "TVOC");
-        int16_t lbl_x_off, lbl_y_off;
-        uint16_t lbl_w, lbl_h;
-        display.getTextBounds(line, 0, 0, &lbl_x_off, &lbl_y_off, &lbl_w, &lbl_h);
+        display.setCursor(right_inner_x, row_baseline_y);
+        display.print("TVOC");
 
-        int16_t tvoc_label_x = col_right_x;
-        int16_t tvoc_label_baseline_y = grid_top - lbl_y_off;
-        display.setCursor(tvoc_label_x, tvoc_label_baseline_y);
-        display.print(line);
-
+        // Value (right-aligned)
         display.setFont(&Orbitron_Medium14pt7b);
         display.setTextSize(1);
         if (data->tvoc == 0) {
@@ -290,37 +277,25 @@ static void epaper_update_internal(const epaper_update_t* data) {
         } else {
             snprintf(line, sizeof(line), "%uppb", data->tvoc);
         }
-
         int16_t val_x_off, val_y_off;
         uint16_t val_w, val_h;
         display.getTextBounds(line, 0, 0, &val_x_off, &val_y_off, &val_w, &val_h);
-
-        int16_t tvoc_value_top = grid_top + lbl_h + 4;
-        int16_t tvoc_value_x   = col_right_x;
-        int16_t tvoc_value_baseline_y = tvoc_value_top - val_y_off;
-        display.setCursor(tvoc_value_x, tvoc_value_baseline_y);
+        int16_t val_x = row_right_x - val_w - val_x_off;
+        display.setCursor(val_x, row_baseline_y);
         display.print(line);
     }
 
-    // For second row, compute a baseline Y just under the first row’s values.
-    // We can use HUM value metrics as reference:
-    int16_t first_row_val_top    = grid_top + /* lbl_h */ 10 + 4; // approx; or reuse from HUM calc
-    int16_t second_row_label_top = first_row_val_top + 20 + row_gap;
-
-    // eCO2
+    // 3. ECO2 Row
     {
+        const int16_t row_baseline_y = rows_start_y + 2 * row_spacing;
+
+        // Label (left-aligned)
         display.setFont(&Orbitron_Medium10pt7b);
         display.setTextSize(1);
-        snprintf(line, sizeof(line), "ECO2");
-        int16_t lbl_x_off, lbl_y_off;
-        uint16_t lbl_w, lbl_h;
-        display.getTextBounds(line, 0, 0, &lbl_x_off, &lbl_y_off, &lbl_w, &lbl_h);
+        display.setCursor(right_inner_x, row_baseline_y);
+        display.print("ECO2");
 
-        int16_t eco2_label_x = col_left_x;
-        int16_t eco2_label_baseline_y = second_row_label_top - lbl_y_off;
-        display.setCursor(eco2_label_x, eco2_label_baseline_y);
-        display.print(line);
-
+        // Value (right-aligned)
         display.setFont(&Orbitron_Medium14pt7b);
         display.setTextSize(1);
         if (data->co2 == 0) {
@@ -328,15 +303,11 @@ static void epaper_update_internal(const epaper_update_t* data) {
         } else {
             snprintf(line, sizeof(line), "%uppm", data->co2);
         }
-
         int16_t val_x_off, val_y_off;
         uint16_t val_w, val_h;
         display.getTextBounds(line, 0, 0, &val_x_off, &val_y_off, &val_w, &val_h);
-
-        int16_t eco2_value_top = second_row_label_top + lbl_h + 4;
-        int16_t eco2_value_x   = col_left_x;
-        int16_t eco2_value_baseline_y = eco2_value_top - val_y_off;
-        display.setCursor(eco2_value_x, eco2_value_baseline_y);
+        int16_t val_x = row_right_x - val_w - val_x_off;
+        display.setCursor(val_x, row_baseline_y);
         display.print(line);
     }
 
