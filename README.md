@@ -8,7 +8,7 @@
   <a href="https://github.com/jrsarath/Aura-Climate/releases"><img src="https://img.shields.io/github/v/release/jrsarath/Aura-Climate?style=for-the-badge&color=2ea44f&label=Release" alt="Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT" /></a>
   <a href="https://github.com/espressif/esp-idf"><img src="https://img.shields.io/badge/ESP--IDF-v5.2%2B-red.svg?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP-IDF" /></a>
-  <a href="https://github.com/espressif/esp-matter"><img src="https://img.shields.io/badge/ESP--Matter-v1.6%2B-orange.svg?style=for-the-badge" alt="ESP-Matter" /></a>
+  <a href="https://github.com/espressif/esp-matter"><img src="https://img.shields.io/badge/ESP--Matter-v1.6%2B-orange.svg?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP-Matter" /></a>
   <a href="https://csa-iot.org/all-solutions/matter/"><img src="https://img.shields.io/badge/Matter-1.2%2B-000000.svg?style=for-the-badge&logo=matter&logoColor=white" alt="Matter" /></a>
   <a href="https://365.altium.com/files/E2252F43-3197-4BE0-AAA4-C608606C2910"><img src="https://img.shields.io/badge/Hardware-Altium%20365-007acc.svg?style=for-the-badge&logo=altium&logoColor=white" alt="Altium 365" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Target-ESP32--C6%20%7C%20ESP32-9cf.svg?style=for-the-badge" alt="Target MCU" /></a>
@@ -48,6 +48,7 @@
   - [Project Structure](#project-structure)
   - [Related Projects](#related-projects)
   - [Credits \& Acknowledgments](#credits--acknowledgments)
+  - [License](#license)
 
 ---
 
@@ -438,8 +439,8 @@ Aura-Climate/
 
 ## Related Projects
 
-- [Aura Control](https://github.com/jrsarath/aura-control) — Matter-enabled multi-gang smart switch and ambient controller.
-- [Aura Management](https://github.com/jrsarath/aura-ota) — Matter-enabled multi-gang smart switch and ambient controller.
+- [Aura Control](https://github.com/jrsarath/aura-control) — Matter-enabled smart relay and multi-gang wall switch controller.
+- [Aura Management](https://github.com/jrsarath/aura-ota) — Centralized OTA firmware distribution service and fleet management platform for Aura IoT devices.
 
 ---
 
@@ -453,6 +454,10 @@ Aura-Climate/
 
 ---
 
-<p align="center">
-  Made in Kolkata with ❤️ by <a href="https://github.com/jrsarath">Sarath "Delta" Singh</a>
-</p>
+## License
+
+This project is licensed under the [MIT License](LICENSE) © 2024 [Sarath "Delta" Singh](https://github.com/jrsarath).
+
+---
+
+Made in Kolkata with ❤️
